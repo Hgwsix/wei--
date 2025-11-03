@@ -50,12 +50,12 @@ public class MyCodeGenerator {
                     Map<OutputFile, String> pathInfo = new HashMap<>();
                     pathInfo.put(OutputFile.xml, mapperXmlPath); // 设置 Mapper XML 生成路径
                     
-                    builder.parent("com.xiaowei.wei_millions_of_likes_backend") // 设置父包名
+                    builder.parent("com.xiaowei.weipicturebackend") // 设置父包名
                             .entity("model.entity") // 设置实体类包名
-                            .mapper(".mapper") // 设置 Mapper 接口包名
-                            .service(".service") // 设置 Service 接口包名
-                            .serviceImpl(".service.impl") // 设置 Service 实现类包名
-                            .controller(".controller") // 设置 Controller 包名
+                            .mapper("mapper") // 设置 Mapper 接口包名
+                            .service("service") // 设置 Service 接口包名
+                            .serviceImpl("service.impl") // 设置 Service 实现类包名
+                            .controller("controller") // 设置 Controller 包名
                             .pathInfo(pathInfo); // 设置路径配置信息
                 })
                 .strategyConfig(builder ->

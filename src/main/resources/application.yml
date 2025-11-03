@@ -6,7 +6,7 @@ spring:
       path: /api
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/wei-picture?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/wei_picture?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: w20040720..
 
@@ -33,7 +33,7 @@ springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
-      packages-to-scan: com.xiaowei.wei_millions_of_likes_backend.controller
+      packages-to-scan: com.xiaowei.weipicturebackend.controller
 # knife4j???????????????
 knife4j:
   enable: true
