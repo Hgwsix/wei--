@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: wei-picture-backend
+  mvc:
+    servlet:
+      path: /api
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/wei-picture?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: w20040720..
+
+server:
+  port: 8123
+mybatis-plus:
+  configuration:
+    # MyBatis ??????
+    map-underscore-to-camel-case: true
+  global-config:
+    # ?????
+    db-config:
+      # ??????
+      id-type: auto
+
+# springdoc-openapi????
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.xiaowei.wei_millions_of_likes_backend.controller
+# knife4j???????????????
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
