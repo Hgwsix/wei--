@@ -1,7 +1,11 @@
 package com.xiaowei.weipicturebackend.model.dto.user;
 
+import lombok.Data;
+import lombok.Getter;
+
 import java.io.Serializable;
 
+@Data
 public class UserRegisterRequest implements Serializable {
     /**
      * 账号
