@@ -92,6 +92,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+        <!--COS对象存储服务-->
+        <dependency>
+            <groupId>com.qcloud</groupId>
+            <artifactId>cos_api</artifactId>
+            <version>5.6.227</version>
+        </dependency>
 
         <dependency>
             <groupId>com.mysql</groupId>

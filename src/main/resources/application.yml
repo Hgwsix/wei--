@@ -10,19 +10,24 @@ spring:
     username: root
     password: w20040720..
 
+
 server:
   port: 8123
 mybatis-plus:
   configuration:
+    # MyBatis 下划线转驼峰
     map-underscore-to-camel-case: true
+    # 日志配置 - 打印 SQL 语句到控制台
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
+    # 全局配置
     db-config:
+      # 主键策略
       id-type: auto
       # 逻辑删除配置
-      logic-delete-field: isDelete  # 全局逻辑删除字段名
-      logic-delete-value: 1         # 逻辑已删除值
-      logic-not-delete-value: 0     # 逻辑未删除值
+      logic-delete-field: isDelete
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
 # springdoc-openapi????
 springdoc:

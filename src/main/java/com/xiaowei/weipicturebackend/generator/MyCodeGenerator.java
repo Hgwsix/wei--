@@ -15,7 +15,7 @@ import java.util.Map;
 public class MyCodeGenerator {
     public static void main(String[] args) {
         // 数据库表名
-        final String[] TABLE_NAME={"user"};
+        final String[] TABLE_NAME={"picture"};
 
         Dict dict = YamlUtil.loadByPath("application.yml");
         Map<String, Object> databaseConfiguration=dict.getByPath("spring.datasource");
