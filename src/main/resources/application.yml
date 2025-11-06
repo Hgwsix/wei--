@@ -1,6 +1,9 @@
 spring:
   application:
     name: wei-picture-backend
+  servlet:
+    multipart:
+      max-file-size: 10MB
   mvc:
     servlet:
       path: /api

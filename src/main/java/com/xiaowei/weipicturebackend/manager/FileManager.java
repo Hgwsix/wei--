@@ -2,20 +2,18 @@ package com.xiaowei.weipicturebackend.manager;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.qcloud.cos.model.PutObjectResult;
-import com.qcloud.cos.model.ciModel.persistence.CIUploadResult;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
+import com.qcloud.cos.model.ciModel.persistence.OriginalInfo;
+import com.xiaowei.weipicturebackend.config.CosClientConfig;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
 import com.xiaowei.weipicturebackend.model.dto.file.UploadPictureResult;
-import com.xiaowei.weipicturebackend.model.dto.picture.UploadPictureRequest;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,8 +30,11 @@ public class FileManager {
     @Resource
     private CosManager cosManager;
 
+    @Resource
+    private CosClientConfig cosClientConfig;
 
-    public UploadPictureRequest uploadPicture(MultipartFile multipartFile,String uploadPathPrefix) {
+
+    public UploadPictureResult uploadPicture(MultipartFile multipartFile, String uploadPathPrefix) {
         //1.对图片进行校验
         validatePicture(multipartFile);
         //2.上传图片到cos
@@ -49,23 +50,36 @@ public class FileManager {
             multipartFile.transferTo(tempFile);
             //上传到cos
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);
-            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
+            OriginalInfo originalInfo = putObjectResult.getCiUploadResult().getOriginalInfo();
+            ImageInfo imageInfo = originalInfo.getImageInfo();
             //3.返回图片信息
             UploadPictureResult uploadPictureResult = new UploadPictureResult();
             int picWidth = imageInfo.getWidth();
             int picHeight = imageInfo.getHeight();
-            double picScale = NumberUtil.round(picWidth*0.1/picHeight, 2).doubleValue();
+            double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
+            uploadPictureResult.setName(originalInfo.getKey());
+            uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
+            uploadPictureResult.setPicWidth(picWidth);
+            uploadPictureResult.setPicHeight(picHeight);
+            uploadPictureResult.setPicScale(picScale);
+            uploadPictureResult.setPicSize(FileUtil.size(tempFile));
+            uploadPictureResult.setPicFormat(imageInfo.getFormat());
+            return uploadPictureResult;
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败");
+        } finally {
+            boolean delResult = deleteFile(tempFile);
+            if (!delResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件删除失败");
+            }
         }
-        return null;
     }
 
     public static void validatePicture(MultipartFile multipartFile) {
         //1,校验文件大小
         long multipartFileSize = multipartFile.getSize();
-        long ONE_MB = 1024 * 1024;
+        long ONE_MB = 1024 * 1024L;
         if(multipartFileSize > ONE_MB * 2) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小不能超过2MB");
         }
@@ -75,5 +89,9 @@ public class FileManager {
         //3，允许上传的文件后缀
         List<String> ALLOW_FORMAT_LIST= Arrays.asList("jpg", "png", "jpeg", "gif", "bmp", "webp");
         ThrowUtils.throwIf(!ALLOW_FORMAT_LIST.contains(suffix), ErrorCode.PARAMS_ERROR, "不允许上传该类型的文件");
+    }
+
+    public static boolean deleteFile(File file) {
+        return file != null && file.delete();
     }
 }

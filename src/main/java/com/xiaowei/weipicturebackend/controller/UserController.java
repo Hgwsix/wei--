@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaowei.weipicturebackend.annotation.AuthCheck;
 import com.xiaowei.weipicturebackend.common.BaseResponse;
+import com.xiaowei.weipicturebackend.common.DeleteRequest;
 import com.xiaowei.weipicturebackend.common.ResultUtils;
 import com.xiaowei.weipicturebackend.constant.UserConstants;
 import com.xiaowei.weipicturebackend.enums.UserRoleEnum;
@@ -145,9 +146,11 @@ public class UserController {
     /**
      * 根据id删除管理元，仅管理员
      */
-    @DeleteMapping("/delete")
+    @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstants.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteUser(@RequestParam("id") long id) {
+    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
+        ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
+        long id = deleteRequest.getId();
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         boolean deleteResult = userService.removeById(id);
         ThrowUtils.throwIf(!deleteResult, ErrorCode.OPERATION_ERROR, "删除用户失败");

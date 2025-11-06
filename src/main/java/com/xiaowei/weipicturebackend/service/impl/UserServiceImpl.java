@@ -187,4 +187,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .orderBy(StrUtil.isNotBlank(sortField),sortOrder.equals("ascend"), User::getCreateTime);
         return userLambdaQueryWrapper;
     }
+
+    @Override
+    public boolean isAdmin(User loginUser) {
+        if (loginUser == null) {
+            return false;
+        }
+        return UserConstants.ADMIN_ROLE.equals(loginUser.getUserRole());
+    }
 }
