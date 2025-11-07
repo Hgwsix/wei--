@@ -122,4 +122,24 @@ public class Picture implements Serializable {
      */
     @TableField("isDelete")
     private Byte isDelete;
+    /**
+     * 审核状态
+     */
+    @TableField("reviewStatus")
+    private Integer reviewStatus;
+    /**
+     * 审核信息
+     */
+    @TableField("reviewMessage")
+    private String reviewMessage;
+    /**
+     * 审核人 id
+     */
+    @TableField("reviewerId")
+    private Long reviewerId;
+    /**
+     * 审核时间
+     */
+    @TableField("reviewTime")
+    private LocalDateTime reviewTime;
 }

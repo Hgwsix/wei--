@@ -1,10 +1,12 @@
 package com.xiaowei.weipicturebackend.model.dto.picture;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.xiaowei.weipicturebackend.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -68,8 +70,25 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
   
     /**  
      * 用户 id  
-     */  
-    private Long userId;  
+     */
+    private Long userId;
+
+    /**
+     * 审核状态
+     */
+    private Integer reviewStatus;
+    /**
+     * 审核信息
+     */
+    private String reviewMessage;
+    /**
+     * 审核人 id
+     */
+    private Long reviewerId;
+    /**
+     * 审核时间
+     */
+    private LocalDateTime reviewTime;
   
     private static final long serialVersionUID = 1L;  
 }

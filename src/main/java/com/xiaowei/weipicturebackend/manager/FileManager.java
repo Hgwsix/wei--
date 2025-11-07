@@ -12,6 +12,7 @@ import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
 import com.xiaowei.weipicturebackend.model.dto.file.UploadPictureResult;
+import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+@Deprecated
 @Slf4j
 @Service
 public class FileManager {
@@ -41,7 +43,7 @@ public class FileManager {
         //构造上传的路径
         String uuid= RandomUtil.randomString(16);
         String originalFileName = multipartFile.getOriginalFilename();
-        String uploadFileName=String.format("%s_%s/%s", DateUtil.date(new Date()),uuid,originalFileName);
+        String uploadFileName=String.format("%s_%s/%s", DateUtil.date(new Date()),uuid,FileUtil.getSuffix(originalFileName));
         String uploadPath = String.format("%s/%s", uploadPathPrefix, uploadFileName);
         //创建临时文件
         File tempFile=null;
@@ -50,14 +52,13 @@ public class FileManager {
             multipartFile.transferTo(tempFile);
             //上传到cos
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);
-            OriginalInfo originalInfo = putObjectResult.getCiUploadResult().getOriginalInfo();
-            ImageInfo imageInfo = originalInfo.getImageInfo();
+            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
             //3.返回图片信息
             UploadPictureResult uploadPictureResult = new UploadPictureResult();
             int picWidth = imageInfo.getWidth();
             int picHeight = imageInfo.getHeight();
             double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
-            uploadPictureResult.setName(originalInfo.getKey());
+            uploadPictureResult.setName(FileUtil.mainName(originalFileName));
             uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
             uploadPictureResult.setPicWidth(picWidth);
             uploadPictureResult.setPicHeight(picHeight);
@@ -69,10 +70,7 @@ public class FileManager {
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败");
         } finally {
-            boolean delResult = deleteFile(tempFile);
-            if (!delResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件删除失败");
-            }
+            deleteFile(tempFile);
         }
     }
 
@@ -91,7 +89,9 @@ public class FileManager {
         ThrowUtils.throwIf(!ALLOW_FORMAT_LIST.contains(suffix), ErrorCode.PARAMS_ERROR, "不允许上传该类型的文件");
     }
 
-    public static boolean deleteFile(File file) {
-        return file != null && file.delete();
+    public static void deleteFile(File file) {
+        if (file == null) return;
+        boolean delResult = FileUtil.del(file);
+        ThrowUtils.throwIf(!delResult, ErrorCode.SYSTEM_ERROR, "文件删除失败");
     }
 }

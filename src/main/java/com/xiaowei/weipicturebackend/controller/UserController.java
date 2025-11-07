@@ -152,6 +152,12 @@ public class UserController {
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
         long id = deleteRequest.getId();
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+        //检查数据库是否存在
+        User oldUser = userService.getById(id);
+        ThrowUtils.throwIf(oldUser == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        //判断要删除的是否为管理员，管理员不能相互删除
+        ThrowUtils.throwIf(oldUser.getUserRole().equals(UserRoleEnum.ADMIN.getValue()), ErrorCode.NO_AUTH_ERROR, "无权限删除");
+        //删除用户
         boolean deleteResult = userService.removeById(id);
         ThrowUtils.throwIf(!deleteResult, ErrorCode.OPERATION_ERROR, "删除用户失败");
         return ResultUtils.success(true);

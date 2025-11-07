@@ -1,12 +1,13 @@
 package com.xiaowei.weipicturebackend.model.dto.picture;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import lombok.Data;
 import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.List;
 
-@Getter
+@Data
 public class PictureUpdateRequest implements Serializable {
     private static final long serializeVersionUID=1L;
     /**

@@ -1,10 +1,11 @@
 package com.xiaowei.weipicturebackend.model.dto.picture;
 
+import lombok.Data;
 import lombok.Getter;
 
 import java.io.Serializable;
 
-@Getter
+@Data
 public class PictureUploadRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -13,4 +14,8 @@ public class PictureUploadRequest implements Serializable {
      */
     private Long id;
 
+    /**
+     * 图片url
+     */
+    private String fileUrl;
 }

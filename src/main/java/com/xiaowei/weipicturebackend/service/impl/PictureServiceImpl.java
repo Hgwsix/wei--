@@ -6,12 +6,17 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.xiaowei.weipicturebackend.enums.PictureReviewStatusEnum;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
 import com.xiaowei.weipicturebackend.manager.FileManager;
+import com.xiaowei.weipicturebackend.manager.upload.FileUploadPicture;
+import com.xiaowei.weipicturebackend.manager.upload.PictureUploadTemplate;
+import com.xiaowei.weipicturebackend.manager.upload.UrlUploadPicture;
 import com.xiaowei.weipicturebackend.model.dto.file.UploadPictureResult;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureQueryRequest;
+import com.xiaowei.weipicturebackend.model.dto.picture.PictureReviewRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadRequest;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.mapper.PictureMapper;
@@ -30,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,11 +54,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private UserService userService;
 
     @Resource
-    private FileManager fileManager;
+    private FileUploadPicture fileUploadPicture;
+
+    @Resource
+    private UrlUploadPicture urlUploadPicture;
 
     @Override
     @Transactional
-    public Picture uploadPicture(MultipartFile multipartFile,
+    public Picture uploadPicture(Object inputSource,
                                  PictureUploadRequest uploadPictureRequest,
                                  HttpServletRequest request) {
 
@@ -61,8 +70,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         pictureId = uploadPictureRequest.getId();
         //上传路径前缀
         String pathPrefix = String.format("%s/%s", "public", loginUser.getId());
+        //根据inputResource区分上传方式
+        PictureUploadTemplate pictureUploadTemplate=fileUploadPicture;
+        if(inputSource instanceof String) {
+            pictureUploadTemplate = urlUploadPicture;
+        }
         //上传图片
-        UploadPictureResult uploadPictureResult = fileManager.uploadPicture(multipartFile, pathPrefix);
+        UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, pathPrefix);
+        //判断上传是否成功
         //构造图片信息
         Picture picture = new Picture();
         BeanUtil.copyProperties(uploadPictureResult, picture);
@@ -78,6 +93,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             picture.setEditTime(LocalDateTime.now());
             picture.setId(pictureId);
         }
+        //填充审核信息，无论添加图片还是更新图片
+        this.fillReviewParam(picture, loginUser);
         //插入数据库
         boolean result = this.saveOrUpdate(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -101,7 +118,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         //将创建图片的用户信息封装到pictureVO
         Set<Long> userIdSet = pictureList.stream().map(Picture::getUserId).collect(Collectors.toSet());
         if(CollectionUtil.isEmpty(userIdSet)){
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在");
+            return collect;
         }
         Map<Long, List<User>> userMap = userService.listByIds(userIdSet).stream().collect(Collectors.groupingBy(User::getId));
         return collect.stream()
@@ -129,11 +146,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         String picFormat = pictureQueryRequest.getPicFormat();
         String searchText = pictureQueryRequest.getSearchText();
         Long userId = pictureQueryRequest.getUserId();
+        Integer reviewStatus = pictureQueryRequest.getReviewStatus();
+        String reviewMessage = pictureQueryRequest.getReviewMessage();
+        Long reviewerId = pictureQueryRequest.getReviewerId();
         String sortField = pictureQueryRequest.getSortField();
         String sortOrder = pictureQueryRequest.getSortOrder();
 
+
         LambdaQueryWrapper<Picture> queryWrapper = new LambdaQueryWrapper<Picture>()
                 .eq(id != null, Picture::getId, id)
+                .eq(reviewStatus!=null,Picture::getReviewStatus,reviewStatus)
                 .like(StrUtil.isNotBlank(name), Picture::getName, name)
                 .like(StrUtil.isNotBlank(introduction), Picture::getIntroduction, introduction)
                 .eq(StrUtil.isNotBlank(category), Picture::getCategory, category)
@@ -142,7 +164,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
                 .eq(!(picHeight ==null), Picture::getPicHeight, picHeight)
                 .eq(!(picScale ==null), Picture::getPicScale, picScale)
                 .like(StrUtil.isNotBlank(picFormat), Picture::getPicFormat, picFormat)
-                .eq(!(userId==null), Picture::getUserId, userId);
+                .eq(!(userId==null), Picture::getUserId, userId)
+                .like(StrUtil.isNotBlank(reviewMessage), Picture::getReviewMessage, reviewMessage)
+                .eq(!(reviewerId==null), Picture::getReviewerId, reviewerId);
         //JSON数组查询
         if (CollectionUtil.isNotEmpty(tags)) {
             tags.forEach(tag -> {
@@ -158,6 +182,44 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         queryWrapper.orderBy(StrUtil.isNotBlank(sortField), sortOrder.equals("ascend"),Picture::getCreateTime);
 
 
-        return null;
+        return queryWrapper;
+    }
+
+    @Override
+    public void doReviewPicture(PictureReviewRequest pictureReviewRequest, User loginUser) {
+        //1.参数校验
+        Long id = pictureReviewRequest.getId();
+        Integer reviewStatus = pictureReviewRequest.getReviewStatus();
+        PictureReviewStatusEnum pictureReviewStatusEnum = PictureReviewStatusEnum.getPictureReviewStatusEnum(reviewStatus);
+        if (pictureReviewStatusEnum == null || id == null || PictureReviewStatusEnum.REVIEWING.equals(reviewStatus)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //2.判断图片是否存在
+        Picture oldPicture = this.getById(id);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+        //3.判断图片审核状态，不能重复审核
+        if (oldPicture.getReviewStatus().equals(pictureReviewStatusEnum.getValue())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "不能重复审核");
+        }
+        //4.更新图片审核信息
+        Picture picture = new Picture();
+        BeanUtil.copyProperties(pictureReviewRequest, picture);
+        //添加审核时间和审核人的id
+        picture.setReviewTime(LocalDateTime.now());
+        picture.setReviewerId(loginUser.getId());
+        boolean updateResult = this.updateById(picture);
+        ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR);
+    }
+
+    @Override
+    public void fillReviewParam(Picture picture, User loginUser) {
+        if (userService.isAdmin(loginUser)) {
+            picture.setReviewerId(loginUser.getId());
+            picture.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+            picture.setReviewMessage("管理员自动审核通过");
+            picture.setReviewTime(LocalDateTime.now());
+        } else {
+            picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
+        }
     }
 }
