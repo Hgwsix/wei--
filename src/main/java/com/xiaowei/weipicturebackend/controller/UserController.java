@@ -160,11 +160,11 @@ public class UserController {
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest) {
         ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        int pageNum = userQueryRequest.getPageNum();
+        int current = userQueryRequest.getCurrent();
         int pageSize = userQueryRequest.getPageSize();
-        Page<User> userPage=userService.page(new Page<>(pageNum, pageSize),
+        Page<User> userPage=userService.page(new Page<>(current, pageSize),
                 userService.getUserQueryWrapper(userQueryRequest));
-        Page<UserVO> userVOPage=new Page<>(pageNum, pageSize, userPage.getTotal());
+        Page<UserVO> userVOPage=new Page<>(current, pageSize, userPage.getTotal());
         List<User> userList=userPage.getRecords();
         userVOPage.setRecords(userService.getUserVOList(userList));
         return ResultUtils.success(userVOPage);
