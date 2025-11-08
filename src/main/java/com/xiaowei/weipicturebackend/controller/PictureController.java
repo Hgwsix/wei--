@@ -19,6 +19,7 @@ import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.model.vo.PictureVO;
 import com.xiaowei.weipicturebackend.service.PictureService;
 import com.xiaowei.weipicturebackend.service.UserService;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
@@ -277,6 +278,17 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         pictureService.doReviewPicture(pictureReviewRequest, loginUser);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 批量抓取图片（仅管理员）
+     */
+    @PostMapping("/upload/batch")
+    @AuthCheck(mustRole = UserConstants.ADMIN_ROLE)
+    public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest,
+                                                      HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(pictureService.uploadPictureByBatch(pictureUploadByBatchRequest,request));
     }
 
 }

@@ -3,6 +3,7 @@ package com.xiaowei.weipicturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureQueryRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureReviewRequest;
+import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadByBatchRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadRequest;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -74,4 +75,15 @@ public interface PictureService extends IService<Picture> {
   * @param loginUser 登录用户对象，包含当前登录用户的信息
   */
  void fillReviewParam(Picture picture, User loginUser);
+
+ /**
+  * 批量上传图片方法
+  * <p>
+  * 该方法用于处理批量图片上传请求，接收一个包含上传参数的PictureUploadRequest对象，
+  * 并返回一个Integer类型的上传结果。
+  *
+  * @param pictureUploadByBatchRequest 包含图片上传所需参数的请求对象，如图片数据、上传配置等
+  * @return 返回一个Integer类型的结果，可能表示上传成功的数量、状态码或其他业务相关数值
+  */
+ Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,HttpServletRequest request);
 }

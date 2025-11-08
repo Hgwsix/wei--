@@ -3,20 +3,24 @@ package com.xiaowei.weipicturebackend.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.xiaowei.weipicturebackend.config.UnsplashConfig;
 import com.xiaowei.weipicturebackend.enums.PictureReviewStatusEnum;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
-import com.xiaowei.weipicturebackend.manager.FileManager;
 import com.xiaowei.weipicturebackend.manager.upload.FileUploadPicture;
 import com.xiaowei.weipicturebackend.manager.upload.PictureUploadTemplate;
 import com.xiaowei.weipicturebackend.manager.upload.UrlUploadPicture;
 import com.xiaowei.weipicturebackend.model.dto.file.UploadPictureResult;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureQueryRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureReviewRequest;
+import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadByBatchRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadRequest;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.mapper.PictureMapper;
@@ -28,15 +32,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -47,6 +50,7 @@ import java.util.stream.Collectors;
  * @author xiaowei
  * @since 2025-11-05
  */
+@Slf4j
 @Service
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> implements PictureService {
 
@@ -58,6 +62,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Resource
     private UrlUploadPicture urlUploadPicture;
+
+    @Resource
+    private UnsplashConfig unsplashConfig;
 
     @Override
     @Transactional
@@ -77,11 +84,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
         //上传图片
         UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, pathPrefix);
-        //判断上传是否成功
         //构造图片信息
         Picture picture = new Picture();
         BeanUtil.copyProperties(uploadPictureResult, picture);
         picture.setUserId(loginUser.getId());
+        //设置图片名称（抓取图片时使用）
+        if(StrUtil.isNotBlank(uploadPictureRequest.getPicName())){
+            picture.setName(uploadPictureRequest.getPicName());
+        }
         //判断是新增图片还是更新
         if (pictureId != null) {
             //更新图片
@@ -221,5 +231,59 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         } else {
             picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
         }
+    }
+
+    @Override
+    public Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,
+                                        HttpServletRequest request) {
+        String searchText = pictureUploadByBatchRequest.getSearchText();
+        Integer count = pictureUploadByBatchRequest.getCount();
+        String namePrefix = pictureUploadByBatchRequest.getNamePrefix();
+        ThrowUtils.throwIf(StrUtil.isBlank(searchText),ErrorCode.PARAMS_ERROR,"搜索内容不能为空");
+
+        //1.调用Unsplash API获取图片url
+        String url = String.format(
+                "https://api.unsplash.com/search/photos?query=%s&per_page=%s&client_id=%s",
+                searchText,
+                count,
+                unsplashConfig.getAccessKey()
+        );
+
+        // 发送HTTP GET请求获取图片数据
+        String result = HttpUtil.get(url);
+        // 解析JSON数据
+        JSONObject json = JSONUtil.parseObj(result);
+        JSONArray results = json.getJSONArray("results");
+
+        int uploadCount=0;
+        int failCount=0;
+        //2.上传图片
+        for (int i = 0; i < results.size(); i++) {
+            try {
+                JSONObject photo = results.getJSONObject(i);
+                // 获取图片URL（regular尺寸，适合展示）
+                String imageUrl = photo.getJSONObject("urls").getStr("regular");
+
+                //生成图片名称
+                if(StrUtil.isBlank(namePrefix)){
+                    namePrefix= searchText;
+                }
+                String picName= namePrefix+(i+1);
+                //生成上传请求
+                PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
+                pictureUploadRequest.setFileUrl(imageUrl);
+                pictureUploadRequest.setPicName(picName);
+                //调用上传服务上传图片
+                this.uploadPicture(imageUrl, pictureUploadRequest, request);
+                uploadCount++;
+            } catch (Exception e) {
+                log.error("上传第{}图片失败：{}",i+1, e.getMessage(),e);
+                failCount++;
+            }
+        }
+
+        //无论上传成功还是失败，都要返回结果
+        log.info("批量上传图片，成功{}张，失败{}张",uploadCount,failCount);
+        return uploadCount;
     }
 }

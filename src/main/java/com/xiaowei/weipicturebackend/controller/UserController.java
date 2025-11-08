@@ -148,13 +148,16 @@ public class UserController {
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstants.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
+    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest,
+                                            HttpServletRequest request) {
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
         long id = deleteRequest.getId();
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         //检查数据库是否存在
         User oldUser = userService.getById(id);
         ThrowUtils.throwIf(oldUser == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        //不能删除自己
+        ThrowUtils.throwIf(oldUser.getId().equals(userService.getLoginUser(request).getId()), ErrorCode.NO_AUTH_ERROR, "无权限删除");
         //判断要删除的是否为管理员，管理员不能相互删除
         ThrowUtils.throwIf(oldUser.getUserRole().equals(UserRoleEnum.ADMIN.getValue()), ErrorCode.NO_AUTH_ERROR, "无权限删除");
         //删除用户
