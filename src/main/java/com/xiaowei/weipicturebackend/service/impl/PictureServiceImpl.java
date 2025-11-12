@@ -2,14 +2,21 @@ package com.xiaowei.weipicturebackend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.xiaowei.weipicturebackend.common.ResultUtils;
 import com.xiaowei.weipicturebackend.config.UnsplashConfig;
+import com.xiaowei.weipicturebackend.constant.PictureConstants;
 import com.xiaowei.weipicturebackend.enums.PictureReviewStatusEnum;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
@@ -33,6 +40,7 @@ import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +48,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +74,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Resource
     private UnsplashConfig unsplashConfig;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    private final Cache<String, String> LOCAL_CACHE = Caffeine.newBuilder()
+            .initialCapacity(1024)
+            .expireAfterWrite(5L, TimeUnit.MINUTES)
+            .maximumSize(10000L)
+            .build();
+
 
     @Override
     @Transactional
@@ -229,6 +248,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             picture.setReviewMessage("管理员自动审核通过");
             picture.setReviewTime(LocalDateTime.now());
         } else {
+            //普通用户编辑的图片都将被置为待审核
             picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
         }
     }
@@ -285,5 +305,42 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         //无论上传成功还是失败，都要返回结果
         log.info("批量上传图片，成功{}张，失败{}张",uploadCount,failCount);
         return uploadCount;
+    }
+
+    @Override
+    public Page<PictureVO> listPictureVOByPage(PictureQueryRequest queryRequest) {
+        int current = queryRequest.getCurrent();
+        int pageSize = queryRequest.getPageSize();
+        //限制爬虫
+        ThrowUtils.throwIf(pageSize>20,ErrorCode.PARAMS_ERROR);
+        //只能查询已经通过的审核的图片
+
+        //构造缓存key
+        String cacheKey = PictureConstants.PICTURE_CACHE_KEY + DigestUtil.md5Hex(JSONUtil.toJsonStr(queryRequest));
+        //1.查询本地缓存
+        String cacheValue = LOCAL_CACHE.getIfPresent(cacheKey);
+        if(StrUtil.isNotBlank(cacheValue)){
+            Page<PictureVO> pictureVO = JSONUtil.toBean(cacheValue, Page.class);
+            return pictureVO;
+        }
+        //2.如果本地缓存不存在，查询Redis分布式缓存
+        String redisValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if(StrUtil.isNotBlank(redisValue)){
+            Page<PictureVO> pictureVO = JSONUtil.toBean(redisValue, Page.class);
+            return pictureVO;
+        }
+        //3.如果redis缓存不存在，查询数据库
+        queryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+        Page<Picture> picturePage = this.page(new Page<>(current, pageSize),
+                this.getQueryWrapper(queryRequest));
+        Page<PictureVO> pictureVOPage = new Page<>(current, pageSize, picturePage.getTotal());
+        pictureVOPage.setRecords(this.getPictureVOList(picturePage.getRecords()));
+        //4.将查询结果存入本地缓存和redis缓存
+        //更新caffeine缓存
+        LOCAL_CACHE.put(cacheKey, JSONUtil.toJsonStr(pictureVOPage));
+        //更新redis缓存(配置过期时间5到10分钟过期)
+        int expireTime=5+ RandomUtil.randomInt(0,5);
+        stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(pictureVOPage), expireTime, TimeUnit.MINUTES);
+        return pictureVOPage;
     }
 }

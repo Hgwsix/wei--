@@ -53,13 +53,6 @@
             <version>3.5.14</version>
         </dependency>
 
-        <!-- MyBatis-Plus 代码生成器 -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-generator</artifactId>
-            <version>3.5.14</version>
-        </dependency>
-
         <!-- 分页插件依赖（v3.5.9+需要单独引入） -->
         <dependency>
             <groupId>com.baomidou</groupId>
@@ -67,12 +60,19 @@
             <version>3.5.14</version>
         </dependency>
 
-        <!-- Freemarker 模板引擎（代码生成器需要） -->
+        <!-- MyBatis-Plus 代码生成器 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-generator</artifactId>
+            <version>3.5.14</version>
+        </dependency>
+
+       <!-- &lt;!&ndash; Freemarker 模板引擎（代码生成器需要） &ndash;&gt;
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
             <version>2.3.32</version>
-        </dependency>
+        </dependency>-->
 
         <!-- Knife4j API 文档 -->
         <dependency>
@@ -97,6 +97,25 @@
             <groupId>com.qcloud</groupId>
             <artifactId>cos_api</artifactId>
             <version>5.6.227</version>
+        </dependency>
+
+        <!-- Spring Data Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Spring Session Redis -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+
+        <!-- Caffeine 缓存 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.1.7</version>
         </dependency>
 
         <dependency>
@@ -152,5 +171,7 @@
             </plugin>
         </plugins>
     </build>
+
+    
 
 </project>

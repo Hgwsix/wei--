@@ -1,6 +1,7 @@
 package com.xiaowei.weipicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureQueryRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureReviewRequest;
 import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadByBatchRequest;
@@ -86,4 +87,5 @@ public interface PictureService extends IService<Picture> {
   * @return 返回一个Integer类型的结果，可能表示上传成功的数量、状态码或其他业务相关数值
   */
  Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,HttpServletRequest request);
+ Page<PictureVO> listPictureVOByPage(PictureQueryRequest queryRequest);
 }

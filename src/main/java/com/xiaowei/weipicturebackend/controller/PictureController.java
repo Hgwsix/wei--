@@ -4,6 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xiaowei.weipicturebackend.annotation.AuthCheck;
 import com.xiaowei.weipicturebackend.common.BaseResponse;
 import com.xiaowei.weipicturebackend.common.DeleteRequest;
@@ -19,15 +21,16 @@ import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.model.vo.PictureVO;
 import com.xiaowei.weipicturebackend.service.PictureService;
 import com.xiaowei.weipicturebackend.service.UserService;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -143,18 +146,8 @@ public class PictureController {
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest queryRequest) {
         ThrowUtils.throwIf(queryRequest == null, ErrorCode.PARAMS_ERROR);
-        int current = queryRequest.getCurrent();
-        int pageSize = queryRequest.getPageSize();
-        //限制爬虫
-        ThrowUtils.throwIf(pageSize>20,ErrorCode.PARAMS_ERROR);
-        //只能查询已经通过的审核的图片
-        queryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
 
-        Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize),
-                pictureService.getQueryWrapper(queryRequest));
-        Page<PictureVO> pictureVOPage = new Page<>(current, pageSize, picturePage.getTotal());
-        pictureVOPage.setRecords(pictureService.getPictureVOList(picturePage.getRecords()));
-        return ResultUtils.success(pictureVOPage);
+        return ResultUtils.success(pictureService.listPictureVOByPage(queryRequest));
     }
 
     /**
