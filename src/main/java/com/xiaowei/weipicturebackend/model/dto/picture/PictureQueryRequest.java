@@ -1,6 +1,5 @@
 package com.xiaowei.weipicturebackend.model.dto.picture;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.xiaowei.weipicturebackend.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -89,6 +88,16 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
      * 审核时间
      */
     private LocalDateTime reviewTime;
-  
+    /**
+     * 空间 id
+     */
+    private Long spaceId;
+
+    /**
+     * 是否只查询 spaceId 为 null 的数据
+     */
+    private boolean nullSpaceId;
+
+
     private static final long serialVersionUID = 1L;  
 }

@@ -6,17 +6,23 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xiaowei.weipicturebackend.constant.UserConstants;
+import com.xiaowei.weipicturebackend.enums.SpaceLevelEnums;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.model.dto.space.SpaceAddRequest;
+import com.xiaowei.weipicturebackend.model.dto.space.SpaceEditRequest;
 import com.xiaowei.weipicturebackend.model.dto.user.UserQueryRequest;
 import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.mapper.UserMapper;
 import com.xiaowei.weipicturebackend.model.vo.LoginUserVO;
 import com.xiaowei.weipicturebackend.model.vo.UserVO;
+import com.xiaowei.weipicturebackend.service.SpaceService;
 import com.xiaowei.weipicturebackend.service.UserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,8 +39,12 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
+    @Lazy
+    @Resource
+    private SpaceService spaceService;
+
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword,HttpServletRequest request) {
         //1.参数校验
         if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码不能为空");
@@ -51,7 +61,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         //2.查看账号是否重复
         LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<User>()
                 .eq(User::getUserAccount, userAccount);
-        long count = this.list().size();
+        long count = this.list(userLambdaQueryWrapper).size();
         if (count > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号已存在");
         }
@@ -66,7 +76,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!saveResult) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册失败");
         }
-        //5.返回用户id
+        //5.用户注册成自动创建自己的空间
+        SpaceAddRequest spaceAddRequest = new SpaceAddRequest();
+        spaceAddRequest.setSpaceName(userAccount + "的空间");
+        spaceAddRequest.setSpaceLevel(SpaceLevelEnums.COMMON.getValue());
+        spaceService.addSpace(spaceAddRequest, request);
+        //6.返回用户ID
         return user.getId();
     }
 

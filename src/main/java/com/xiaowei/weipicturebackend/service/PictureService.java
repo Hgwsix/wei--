@@ -11,10 +11,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.model.vo.PictureVO;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * <p>
@@ -87,5 +85,25 @@ public interface PictureService extends IService<Picture> {
   * @return 返回一个Integer类型的结果，可能表示上传成功的数量、状态码或其他业务相关数值
   */
  Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,HttpServletRequest request);
- Page<PictureVO> listPictureVOByPage(PictureQueryRequest queryRequest);
+
+ /**
+  * 分页查询图片视图对象列表
+  *
+  * @param queryRequest 图片查询请求参数，包含分页、排序和查询条件等信息
+  * @return 返回一个包含PictureVO对象的分页结果，包含数据列表和分页信息
+  */
+ Page<PictureVO> listPictureVOByPage(PictureQueryRequest queryRequest,HttpServletRequest request);
+/**
+ * 检查用户对图片的访问权限
+ * @param picture 需要检查权限的图片对象
+ * @param loginUser 当前登录用户对象
+ * 该方法用于验证用户是否有权限访问指定的图片，可能会抛出权限相关的异常
+ */
+ void checkPictureAuth(Picture picture, User loginUser);
+
+/**
+ * 清除图片文件的方法
+ * @param picture 需要清除的图片对象
+ */
+ void clearPictureFile(Picture picture);
 }

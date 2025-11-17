@@ -67,12 +67,12 @@
             <version>3.5.14</version>
         </dependency>
 
-       <!-- &lt;!&ndash; Freemarker 模板引擎（代码生成器需要） &ndash;&gt;
-        <dependency>
-            <groupId>org.freemarker</groupId>
-            <artifactId>freemarker</artifactId>
-            <version>2.3.32</version>
-        </dependency>-->
+        <!--&lt;!&ndash; Freemarker 模板引擎（代码生成器需要）&ndash;&gt;
+         <dependency>
+             <groupId>org.freemarker</groupId>
+             <artifactId>freemarker</artifactId>
+             <version>2.3.32</version>
+         </dependency>-->
 
         <!-- Knife4j API 文档 -->
         <dependency>
@@ -109,6 +109,13 @@
         <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+
+        <!-- Redisson 分布式锁 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.35.0</version>
         </dependency>
 
         <!-- Caffeine 缓存 -->

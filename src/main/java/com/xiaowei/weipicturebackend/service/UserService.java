@@ -28,7 +28,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword 确认密码
      * @return 注册结果，返回long类型数据，可能是用户ID或状态码
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword);
+    long userRegister(String userAccount, String userPassword, String checkPassword,HttpServletRequest request);
 
     /**
      * 获取加密后的密码字符串

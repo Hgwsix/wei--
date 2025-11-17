@@ -35,4 +35,5 @@ public class PictureUpdateRequest implements Serializable {
      */
     private List<String> tags;
 
+
 }

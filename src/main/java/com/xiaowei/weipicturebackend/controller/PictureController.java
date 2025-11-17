@@ -4,8 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xiaowei.weipicturebackend.annotation.AuthCheck;
 import com.xiaowei.weipicturebackend.common.BaseResponse;
 import com.xiaowei.weipicturebackend.common.DeleteRequest;
@@ -17,20 +15,20 @@ import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
 import com.xiaowei.weipicturebackend.model.dto.picture.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
+import com.xiaowei.weipicturebackend.model.entity.Space;
 import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.model.vo.PictureVO;
 import com.xiaowei.weipicturebackend.service.PictureService;
+import com.xiaowei.weipicturebackend.service.SpaceService;
 import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -50,6 +48,9 @@ public class PictureController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private SpaceService spaceService;
+
     /**
      * 上传图片（可以重复上传）
      *
@@ -60,7 +61,7 @@ public class PictureController {
      */
     @PostMapping("/upload")
     public BaseResponse<PictureVO> uploadPicture(@RequestPart("file") MultipartFile multipartFile,
-                                                 PictureUploadRequest uploadPictureRequest,
+                                                 @ModelAttribute PictureUploadRequest uploadPictureRequest,
                                                  HttpServletRequest request) {
         ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR, "文件不能为空");
         ThrowUtils.throwIf(uploadPictureRequest == null, ErrorCode.PARAMS_ERROR);
@@ -97,19 +98,27 @@ public class PictureController {
         Long id = deleteRequest.getId();
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
-        //权限校验（只要管理员和本人可以删除图片）
-        if (!loginUser.getId().equals(id) && !userService.isAdmin(loginUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
         //检查是否存在数据
         Picture oldPicture = pictureService.getById(id);
+        Long spaceId = oldPicture.getSpaceId();
         if (oldPicture == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "数据不存在");
         }
+        //检查权限
+        pictureService.checkPictureAuth(oldPicture, loginUser);
         //删除图片
         boolean remove = pictureService.removeById(id);
         if (!remove) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "删除失败");
+        }
+        //删除成功，更新空间额度
+        if(spaceId != null){
+            boolean update = spaceService.lambdaUpdate()
+                    .eq(Space::getId, spaceId)
+                    .setSql("totalCount=totalCount - 1")
+                    .setSql("totalSize=totalSize - " + oldPicture.getPicSize())
+                    .update();
+            ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR,"额度更新失败");
         }
         return ResultUtils.success(true);
     }
@@ -144,10 +153,11 @@ public class PictureController {
      * @return
      */
     @PostMapping("/list/page/vo")
-    public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest queryRequest) {
+    public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest queryRequest,
+                                                             HttpServletRequest request) {
         ThrowUtils.throwIf(queryRequest == null, ErrorCode.PARAMS_ERROR);
 
-        return ResultUtils.success(pictureService.listPictureVOByPage(queryRequest));
+        return ResultUtils.success(pictureService.listPictureVOByPage(queryRequest,request));
     }
 
     /**
@@ -172,12 +182,17 @@ public class PictureController {
      * @return
      */
     @GetMapping("/get/vo")
-    public BaseResponse<PictureVO> getPictureVOById(@RequestParam Long id) {
+    public BaseResponse<PictureVO> getPictureVOById(@RequestParam Long id,HttpServletRequest request) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         Picture picture = pictureService.getById(id);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+        //检查权限
+        if(picture.getSpaceId()!=null){
+            User loginUser = userService.getLoginUser(request);
+            pictureService.checkPictureAuth(picture, loginUser);
+        }
         //只能查看已经审核通过的图片
-        ThrowUtils.throwIf(picture.getReviewStatus() != PictureReviewStatusEnum.PASS.getValue(), ErrorCode.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(!picture.getReviewStatus().equals(PictureReviewStatusEnum.PASS.getValue()), ErrorCode.NO_AUTH_ERROR);
         //将用户脱敏后信息封装进图片封装类
         PictureVO pictureVO = pictureService.getPictureVO(picture);
         Long userId = picture.getUserId();
@@ -214,9 +229,7 @@ public class PictureController {
         validPicture(picture);
         //2.校验信息，只有本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
-        if(!userService.isAdmin(loginUser) && !picture.getUserId().equals(loginUser.getId())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有权限编辑");
-        }
+        pictureService.checkPictureAuth(picture, loginUser);
         //3.查询数据库是否存在需要编辑的图片
         Picture oldPicture = pictureService.getById(picture.getId());
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "数据不存在");
