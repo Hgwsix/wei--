@@ -2,10 +2,7 @@ package com.xiaowei.weipicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureQueryRequest;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureReviewRequest;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadRequest;
+import com.xiaowei.weipicturebackend.model.dto.picture.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaowei.weipicturebackend.model.entity.User;
@@ -106,4 +103,12 @@ public interface PictureService extends IService<Picture> {
  * @param picture 需要清除的图片对象
  */
  void clearPictureFile(Picture picture);
+
+ /**
+  * 根据颜色搜索图片的方法
+  *
+  * @param pictureSearchPictureByColorRequest 包含颜色搜索条件的请求对象
+  * @return 返回符合条件的图片列表
+  */
+ List<PictureVO> searchPictureByColor(PictureSearchPictureByColorRequest pictureSearchPictureByColorRequest, HttpServletRequest request);
 }

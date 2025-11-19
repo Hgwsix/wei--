@@ -124,6 +124,12 @@
             <artifactId>caffeine</artifactId>
             <version>3.1.7</version>
         </dependency>
+        <!--bing 以图搜图-->
+        <dependency>
+            <groupId>com.microsoft.azure.cognitiveservices</groupId>
+            <artifactId>azure-cognitiveservices-imagesearch</artifactId>
+            <version>1.0.1</version>
+        </dependency>
 
         <dependency>
             <groupId>com.mysql</groupId>

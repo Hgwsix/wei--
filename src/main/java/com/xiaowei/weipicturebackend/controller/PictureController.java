@@ -230,6 +230,13 @@ public class PictureController {
         //2.校验信息，只有本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
         pictureService.checkPictureAuth(picture, loginUser);
+        //校验空间权限，只有空间管理人可以编辑图片
+        Long spaceId = pictureEditRequest.getSpaceId();
+        if(spaceId!=null){
+            Space space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+            ThrowUtils.throwIf(!space.getUserId().equals(loginUser.getId()), ErrorCode.NO_AUTH_ERROR, "没有权限编辑该图片");
+        }
         //3.查询数据库是否存在需要编辑的图片
         Picture oldPicture = pictureService.getById(picture.getId());
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "数据不存在");
@@ -295,6 +302,13 @@ public class PictureController {
                                                       HttpServletRequest request) {
         ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(pictureService.uploadPictureByBatch(pictureUploadByBatchRequest,request));
+    }
+
+    @PostMapping("/search/color")
+    public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody PictureSearchPictureByColorRequest pictureSearchPictureByColorRequest,
+                                                            HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureSearchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(pictureService.searchPictureByColor(pictureSearchPictureByColorRequest, request));
     }
 
 }

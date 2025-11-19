@@ -1,6 +1,7 @@
 package com.xiaowei.weipicturebackend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -26,10 +27,7 @@ import com.xiaowei.weipicturebackend.manager.upload.FileUploadPicture;
 import com.xiaowei.weipicturebackend.manager.upload.PictureUploadTemplate;
 import com.xiaowei.weipicturebackend.manager.upload.UrlUploadPicture;
 import com.xiaowei.weipicturebackend.model.dto.file.UploadPictureResult;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureQueryRequest;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureReviewRequest;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.xiaowei.weipicturebackend.model.dto.picture.PictureUploadRequest;
+import com.xiaowei.weipicturebackend.model.dto.picture.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.mapper.PictureMapper;
 import com.xiaowei.weipicturebackend.model.entity.Space;
@@ -40,6 +38,7 @@ import com.xiaowei.weipicturebackend.service.PictureService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaowei.weipicturebackend.service.SpaceService;
 import com.xiaowei.weipicturebackend.service.UserService;
+import com.xiaowei.weipicturebackend.util.ColorSimilarityUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -254,6 +253,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         String sortOrder = pictureQueryRequest.getSortOrder();
         Long spaceId = pictureQueryRequest.getSpaceId();
         boolean nullSpaceId = pictureQueryRequest.isNullSpaceId();
+        Date startEditTime = pictureQueryRequest.getStartEditTime();
+        Date endEditTime = pictureQueryRequest.getEndEditTime();
 
         LambdaQueryWrapper<Picture> queryWrapper = new LambdaQueryWrapper<Picture>()
                 .eq(id != null, Picture::getId, id)
@@ -270,7 +271,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
                 .like(StrUtil.isNotBlank(reviewMessage), Picture::getReviewMessage, reviewMessage)
                 .eq(!(reviewerId==null), Picture::getReviewerId, reviewerId)
                 .eq(spaceId != null, Picture::getSpaceId, spaceId)
-                .isNull(nullSpaceId, Picture::getSpaceId);
+                .isNull(nullSpaceId, Picture::getSpaceId)
+                //>=
+                .ge(startEditTime != null, Picture::getEditTime, startEditTime)
+                //<
+                .lt(endEditTime != null, Picture::getEditTime, endEditTime);
         //JSON数组查询
         if (CollectionUtil.isNotEmpty(tags)) {
             tags.forEach(tag -> {
@@ -482,4 +487,37 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         cosManager.deleteObject(url);
         cosManager.deleteObject(thumbnailUrl);
     }
+
+    @Override
+    public List<PictureVO> searchPictureByColor(PictureSearchPictureByColorRequest pictureSearchPictureByColorRequest,
+                                              HttpServletRequest request) {
+        String picColor = pictureSearchPictureByColorRequest.getPicColor();
+        Long spaceId = pictureSearchPictureByColorRequest.getSpaceId();
+        //1.校验参数
+        ThrowUtils.throwIf(StrUtil.isBlank(picColor),ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceId==null || spaceId<=0,ErrorCode.PARAMS_ERROR);
+        //2.校验空间权限
+        User loginUser = userService.getLoginUser(request);
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space==null,ErrorCode.PARAMS_ERROR,"空间不存在");
+        if (!loginUser.getId().equals(space.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"没有空间权限");
+        }
+        //3.查询当前空间下所有图片，必须有主色调
+        List<Picture> pictureList = lambdaQuery()
+                .eq(Picture::getSpaceId, spaceId)
+                .isNotNull(Picture::getPicColor)
+                .list();
+        //如果没有查询到图片，返回空列表
+        if(CollUtil.isEmpty(pictureList)){
+            return List.of();
+        }
+        List<PictureVO> pictureVOList = getPictureVOList(pictureList);
+        //4.计算空间相似度并排序
+        return pictureVOList.stream()
+                .sorted(Comparator.comparingDouble(pictureVO -> -ColorSimilarityUtil.calculateSimilarity(pictureVO.getPicColor(), picColor)))
+                .limit(15)
+                .toList();
+    }
 }
+
