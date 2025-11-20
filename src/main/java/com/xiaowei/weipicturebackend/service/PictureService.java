@@ -111,4 +111,12 @@ public interface PictureService extends IService<Picture> {
   * @return 返回符合条件的图片列表
   */
  List<PictureVO> searchPictureByColor(PictureSearchPictureByColorRequest pictureSearchPictureByColorRequest, HttpServletRequest request);
+
+ /**
+  * 批量编辑图片的方法
+  *
+  * @param pictureEditByBatchRequest 图片编辑请求参数对象，包含需要批量编辑的图片信息和编辑规则
+  * @param loginUser                 当前登录用户对象，用于验证用户权限和记录操作日志
+  */
+ void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
 }

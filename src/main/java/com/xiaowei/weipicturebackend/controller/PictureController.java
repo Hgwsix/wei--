@@ -221,15 +221,19 @@ public class PictureController {
                                              HttpServletRequest request) {
         ThrowUtils.throwIf(pictureEditRequest == null, ErrorCode.PARAMS_ERROR);
         //1.获取编辑信息
-        Picture picture=new Picture();
-        BeanUtil.copyProperties(pictureEditRequest, picture);
+        Long id = pictureEditRequest.getId();
+        ThrowUtils.throwIf(id==null || id<=0,ErrorCode.PARAMS_ERROR);
+        Picture oldPicture = pictureService.getById(id);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "数据不存在");
+        BeanUtil.copyProperties(pictureEditRequest, oldPicture);
         //将tags数组转JSON字符串
-        picture.setTags(JSONUtil.toJsonStr(pictureEditRequest.getTags()));
+        oldPicture.setTags(JSONUtil.toJsonStr(pictureEditRequest.getTags()));
         //对编辑的信息进行数据校验
-        validPicture(picture);
+        validPicture(oldPicture);
         //2.校验信息，只有本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
-        pictureService.checkPictureAuth(picture, loginUser);
+
+        pictureService.checkPictureAuth(oldPicture, loginUser);
         //校验空间权限，只有空间管理人可以编辑图片
         Long spaceId = pictureEditRequest.getSpaceId();
         if(spaceId!=null){
@@ -237,15 +241,12 @@ public class PictureController {
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
             ThrowUtils.throwIf(!space.getUserId().equals(loginUser.getId()), ErrorCode.NO_AUTH_ERROR, "没有权限编辑该图片");
         }
-        //3.查询数据库是否存在需要编辑的图片
-        Picture oldPicture = pictureService.getById(picture.getId());
-        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "数据不存在");
         //4.设置编辑时间
-        picture.setEditTime(LocalDateTime.now());
+        oldPicture.setEditTime(LocalDateTime.now());
         //5.更新数据库
         //填充审核信息
-        pictureService.fillReviewParam(picture, loginUser);
-        boolean update = pictureService.updateById(picture);
+        pictureService.fillReviewParam(oldPicture, loginUser);
+        boolean update = pictureService.updateById(oldPicture);
         ThrowUtils.throwIf(!update,ErrorCode.OPERATION_ERROR,"编辑失败");
         return ResultUtils.success(true);
     }
@@ -309,6 +310,14 @@ public class PictureController {
                                                             HttpServletRequest request) {
         ThrowUtils.throwIf(pictureSearchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(pictureService.searchPictureByColor(pictureSearchPictureByColorRequest, request));
+    }
+
+    @PostMapping("/edit/batch")
+    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchRequest pictureEditByBatchRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureEditByBatchRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        pictureService.editPictureByBatch(pictureEditByBatchRequest, loginUser);
+        return ResultUtils.success(true);
     }
 
 }

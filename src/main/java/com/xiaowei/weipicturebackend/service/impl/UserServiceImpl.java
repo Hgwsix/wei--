@@ -76,12 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!saveResult) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册失败");
         }
-        //5.用户注册成自动创建自己的空间
-        SpaceAddRequest spaceAddRequest = new SpaceAddRequest();
-        spaceAddRequest.setSpaceName(userAccount + "的空间");
-        spaceAddRequest.setSpaceLevel(SpaceLevelEnums.COMMON.getValue());
-        spaceService.addSpace(spaceAddRequest, request);
-        //6.返回用户ID
+        //5.返回用户ID
         return user.getId();
     }
 

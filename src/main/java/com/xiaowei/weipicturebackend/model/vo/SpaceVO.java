@@ -1,13 +1,11 @@
 package com.xiaowei.weipicturebackend.model.vo;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class SpaceVO implements Serializable {
@@ -70,4 +68,8 @@ public class SpaceVO implements Serializable {
      * 创建用户信息
      */
     private UserVO user;
+    /**
+     * 权限列表
+     */
+    private List<String> permissionList = new ArrayList<>();
 }

@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -139,7 +140,6 @@ public class SpaceController {
      * @return
      */
     @PostMapping("/list/page/vo")
-    @AuthCheck(mustRole = UserConstants.ADMIN_ROLE)
     public BaseResponse<Page<SpaceVO>> listSpaceVOByPage(@RequestBody SpaceQueryRequest queryRequest) {
         ThrowUtils.throwIf(queryRequest == null, ErrorCode.PARAMS_ERROR);
 
@@ -151,11 +151,10 @@ public class SpaceController {
      * @return
      */
     @GetMapping("/get/vo")
-    public BaseResponse<SpaceVO> getSpaceVOById(@RequestParam Long id) {
+    public BaseResponse<SpaceVO> getSpaceVOById(@RequestParam Long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         Space Space = spaceService.getById(id);
         ThrowUtils.throwIf(Space == null, ErrorCode.NOT_FOUND_ERROR);
-
         //将用户脱敏后信息封装进空间封装类
         SpaceVO SpaceVO = spaceService.getSpaceVO(Space);
         Long userId = Space.getUserId();
@@ -164,6 +163,31 @@ public class SpaceController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
         }
         SpaceVO.setUser(userService.getUserVO(byId));
+
+        // 计算权限列表
+        List<String> permissionList = new ArrayList<>();
+        try {
+            // 尝试获取当前登录用户
+            User loginUser = userService.getLoginUser(request);
+            Long loginUserId = loginUser.getId();
+
+            // 如果是空间的创建者或者是管理员，拥有所有权限
+            if (Space.getUserId().equals(loginUserId) || userService.isAdmin(loginUser)) {
+                permissionList.add("spaceUser:manage");  // 空间成员管理权限
+                permissionList.add("picture:view");      // 图片查看权限
+                permissionList.add("picture:upload");    // 图片上传权限
+                permissionList.add("picture:edit");      // 图片编辑权限
+                permissionList.add("picture:delete");    // 图片删除权限
+            } else {
+                // 其他用户可能只有查看权限（可以根据实际业务需求调整）
+                permissionList.add("picture:view");
+            }
+        } catch (Exception e) {
+            // 如果未登录，则只有查看权限
+            permissionList.add("picture:view");
+        }
+
+        SpaceVO.setPermissionList(permissionList);
         return ResultUtils.success(SpaceVO);
 
     }
