@@ -15,6 +15,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.xiaowei.weipicturebackend.api.aliyunai.ALiYunAiApi;
+import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateOutPaintingTaskRequest;
+import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateTaskResponse;
+import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunQueryTaskResponse;
 import com.xiaowei.weipicturebackend.common.ResultUtils;
 import com.xiaowei.weipicturebackend.config.UnsplashConfig;
 import com.xiaowei.weipicturebackend.constant.PictureConstants;
@@ -95,12 +99,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     @Resource
     private CosManager cosManager;
 
+    @Resource
+    private ALiYunAiApi aLiYunAiApi;
+
     private final Cache<String, String> LOCAL_CACHE = Caffeine.newBuilder()
             .initialCapacity(1024)
             //缓存五分钟过期
             .expireAfterWrite(5L, TimeUnit.MINUTES)
             .maximumSize(10000L)
             .build();
+
 
 
     /**
@@ -565,6 +573,28 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         boolean updateResult = this.updateBatchById(pictureList);
         ThrowUtils.throwIf(!updateResult,ErrorCode.SYSTEM_ERROR,"批量修改失败");
     }
+
+    @Override
+    public AliyunCreateTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingRequest createPictureOutPaintingRequest, User loginUser) {
+        //校验参数
+        Long pictureId = createPictureOutPaintingRequest.getPictureId();
+        AliyunCreateOutPaintingTaskRequest.Parameters parameters = createPictureOutPaintingRequest.getParameters();
+        ThrowUtils.throwIf(pictureId==null || pictureId<=0,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(parameters==null,ErrorCode.PARAMS_ERROR);
+        //校验权限
+        Picture picture = Optional.ofNullable(getById(pictureId))
+                .orElseThrow(()->new BusinessException(ErrorCode.PARAMS_ERROR,"图片不存在"));
+        checkPictureAuth(picture,loginUser);
+        //构造AI扩图请求
+        AliyunCreateOutPaintingTaskRequest aliyunCreateOutPaintingTaskRequest = new AliyunCreateOutPaintingTaskRequest();
+        AliyunCreateOutPaintingTaskRequest.Input input = new AliyunCreateOutPaintingTaskRequest.Input();
+        input.setImageUrl(picture.getUrl());
+        aliyunCreateOutPaintingTaskRequest.setParameters(parameters);
+        aliyunCreateOutPaintingTaskRequest.setInput(input);
+        //调用api
+        return aLiYunAiApi.createPictureOutPaintingTask(aliyunCreateOutPaintingTaskRequest);
+    }
+
 
     /**
      * nameRule 格式：图片{序号}

@@ -2,6 +2,9 @@ package com.xiaowei.weipicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateOutPaintingTaskRequest;
+import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateTaskResponse;
+import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunQueryTaskResponse;
 import com.xiaowei.weipicturebackend.model.dto.picture.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -119,4 +122,15 @@ public interface PictureService extends IService<Picture> {
   * @param loginUser                 当前登录用户对象，用于验证用户权限和记录操作日志
   */
  void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
+
+ /**
+  * 创建图片外绘任务
+  *
+  * @param createPictureOutPaintingRequest 阿里云创建外绘任务请求参数
+  * @param loginUser                          登录用户信息
+  * @return AliyunCreateTaskResponse 阿里云创建任务响应结果
+  */
+ AliyunCreateTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingRequest createPictureOutPaintingRequest, User loginUser);
 }
+
+

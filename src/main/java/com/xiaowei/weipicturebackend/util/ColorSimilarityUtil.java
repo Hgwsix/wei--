@@ -67,13 +67,27 @@ public final class ColorSimilarityUtil {
         if (normalized.startsWith("#")) {
             normalized = normalized.substring(1);
         }
-        if (!(normalized.length() == 6 || normalized.length() == 3)) {
-            throw new IllegalArgumentException("仅支持 3 位或 6 位十六进制颜色值");
+        if (normalized.startsWith("0x") || normalized.startsWith("0X")) {
+            normalized = normalized.substring(2);
+        }
+        // 兼容纯数字颜色值（前端可能传 16777215 这样的十进制）
+        if (normalized.matches("\\d+")) {
+            long decimalValue = Long.parseLong(normalized);
+            normalized = String.format("%06X", decimalValue & 0xFFFFFF);
         }
         if (normalized.length() == 3) {
             normalized = "" + normalized.charAt(0) + normalized.charAt(0)
                     + normalized.charAt(1) + normalized.charAt(1)
                     + normalized.charAt(2) + normalized.charAt(2);
+        } else if (normalized.length() == 4) {
+            normalized = "" + normalized.charAt(0) + normalized.charAt(0)
+                    + normalized.charAt(1) + normalized.charAt(1)
+                    + normalized.charAt(2) + normalized.charAt(2);
+        } else if (normalized.length() == 8) {
+            normalized = normalized.substring(0, 6);
+        }
+        if (normalized.length() != 6) {
+            throw new IllegalArgumentException("仅支持 3 位或 6 位十六进制颜色值");
         }
 
         try {
