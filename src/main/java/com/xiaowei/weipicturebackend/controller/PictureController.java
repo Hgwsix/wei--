@@ -87,7 +87,6 @@ public class PictureController {
     public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody PictureUploadRequest uploadPictureRequest,
                                                       HttpServletRequest request) {
         ThrowUtils.throwIf(uploadPictureRequest == null, ErrorCode.PARAMS_ERROR, "文件不能为空");
-        ThrowUtils.throwIf(uploadPictureRequest == null, ErrorCode.PARAMS_ERROR);
         String fileUrl= uploadPictureRequest.getFileUrl();
         Picture picture = pictureService.uploadPicture(fileUrl, uploadPictureRequest, request);
         return ResultUtils.success(pictureService.getPictureVO(picture));

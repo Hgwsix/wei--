@@ -36,7 +36,7 @@ public abstract class PictureUploadTemplate {
         //构造上传的路径
         String uuid = RandomUtil.randomString(16);
         String originalFileName = getOriginalFilename(inputSource);
-        String uploadFileName = String.format("%s_%s/%s", DateUtil.date(new Date()), uuid, FileUtil.getSuffix(originalFileName));
+        String uploadFileName = String.format("%s_%s/%s", DateUtil.date(new Date()), uuid,"picture."+ FileUtil.getSuffix(originalFileName));
         String uploadPath = String.format("%s/%s", uploadPathPrefix, uploadFileName);
 
         File tempFile = null;
@@ -58,10 +58,8 @@ public abstract class PictureUploadTemplate {
                 if(objectList.size() > 1){
                     thumbnailCiobject = objectList.get(1);
                 }
-                //删除原图
-                cosManager.deleteObject(uploadPath);
                 //封装格式转换后的结果
-                return buildResult(originalFileName, formatCiObject, thumbnailCiobject, imageInfo);
+                return buildResult(originalFileName, formatCiObject, thumbnailCiobject, imageInfo, uploadPath);
             }
             //3.返回原图图片信息
             return buildResult(imageInfo, originalFileName, uploadPath, tempFile);
@@ -107,6 +105,8 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicFormat(imageInfo.getFormat());
         //设置图片主色调
         uploadPictureResult.setPicColor(imageInfo.getAve());
+        //设置图片原图url
+        uploadPictureResult.setOriginalUrl(uploadPath);
         // 返回构建好的结果对象
         return uploadPictureResult;
     }
@@ -151,7 +151,7 @@ public abstract class PictureUploadTemplate {
         ThrowUtils.throwIf(!delResult, ErrorCode.SYSTEM_ERROR, "文件删除失败");
     }
 
-    private UploadPictureResult buildResult(String originalFileName, CIObject formatCiObject, CIObject thumbnailCiobject, ImageInfo imageInfo) {
+    private UploadPictureResult buildResult(String originalFileName, CIObject formatCiObject, CIObject thumbnailCiobject, ImageInfo imageInfo,String uploadPath) {
         // 创建上传结果对象
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         // 获取图片宽度
@@ -180,6 +180,8 @@ public abstract class PictureUploadTemplate {
         }
         //设置图片主色调
         uploadPictureResult.setPicColor(imageInfo.getAve());
+        //设置图片原图url
+        uploadPictureResult.setOriginalUrl(cosClientConfig.getHost() + "/" + uploadPath);
         // 返回构建好的结果对象
         return uploadPictureResult;
     }

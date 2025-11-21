@@ -1,5 +1,6 @@
 package com.xiaowei.weipicturebackend.model.dto.file;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -52,6 +53,9 @@ public class UploadPictureResult implements Serializable {
      * 图片主色调
      */
     private String picColor;
-
+    /**
+     * 原图url
+     */
+    private String originalUrl;
 
 }

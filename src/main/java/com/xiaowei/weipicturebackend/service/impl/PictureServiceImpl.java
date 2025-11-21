@@ -18,8 +18,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xiaowei.weipicturebackend.api.aliyunai.ALiYunAiApi;
 import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateOutPaintingTaskRequest;
 import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateTaskResponse;
-import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunQueryTaskResponse;
-import com.xiaowei.weipicturebackend.common.ResultUtils;
 import com.xiaowei.weipicturebackend.config.UnsplashConfig;
 import com.xiaowei.weipicturebackend.constant.PictureConstants;
 import com.xiaowei.weipicturebackend.enums.PictureReviewStatusEnum;
@@ -43,21 +41,16 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaowei.weipicturebackend.service.SpaceService;
 import com.xiaowei.weipicturebackend.service.UserService;
 import com.xiaowei.weipicturebackend.util.ColorSimilarityUtil;
+import com.xiaowei.weipicturebackend.util.UrlUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.security.cert.PKIXCertPathBuilderResult;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -172,7 +165,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         Picture oldPicture = null;
         if (pictureId != null) {
             //更新图片
-            oldPicture = lambdaQuery().eq(Picture::getId, pictureId).getEntity();
+            oldPicture = lambdaQuery().eq(Picture::getId, pictureId).one();
             if (oldPicture == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在");
             }
@@ -588,7 +581,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         //构造AI扩图请求
         AliyunCreateOutPaintingTaskRequest aliyunCreateOutPaintingTaskRequest = new AliyunCreateOutPaintingTaskRequest();
         AliyunCreateOutPaintingTaskRequest.Input input = new AliyunCreateOutPaintingTaskRequest.Input();
-        input.setImageUrl(picture.getUrl());
+        input.setImageUrl(UrlUtil.encodePath(picture.getOriginalUrl()));
         aliyunCreateOutPaintingTaskRequest.setParameters(parameters);
         aliyunCreateOutPaintingTaskRequest.setInput(input);
         //调用api

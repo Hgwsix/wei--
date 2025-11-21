@@ -20,6 +20,10 @@ import java.util.List;
 
 @Component
 public class UrlUploadPicture extends PictureUploadTemplate{
+
+    private static final int HTTP_PARTIAL_CONTENT = 206;
+    private static final String DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
+    private static final String DEFAULT_ACCEPT = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8";
     @Override
     public void processFileSource(Object inputSource, File tempFile) throws Exception {
          String fileUrl=(String) inputSource;
@@ -30,7 +34,12 @@ public class UrlUploadPicture extends PictureUploadTemplate{
     @Override
     public String getOriginalFilename(Object inputSource) {
         String fileUrl=(String) inputSource;
-        return FileUtil.getName(fileUrl);
+        String cleanUrl = StrUtil.subBefore(fileUrl, "?", false);
+        String fileName = FileUtil.getName(StrUtil.isNotBlank(cleanUrl) ? cleanUrl : fileUrl);
+        if (StrUtil.isBlank(FileUtil.extName(fileName))) {
+            return fileName + ".jpg";
+        }
+        return fileName;
     }
 
     @Override
@@ -48,9 +57,26 @@ public class UrlUploadPicture extends PictureUploadTemplate{
         //3.发送HEAD请求以验证文件是否存在
         HttpResponse execute =null;
         try {
-            execute=HttpUtil.createRequest(Method.HEAD, fileUrl).execute();
-            if(execute.getStatus()!= HttpStatus.HTTP_OK) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件不存在");
+            execute = HttpUtil.createRequest(Method.HEAD, fileUrl)
+                    .setFollowRedirects(true)
+                    .header("User-Agent", DEFAULT_USER_AGENT)
+                    .header("Referer", buildReferer(fileUrl))
+                    .header("Accept", DEFAULT_ACCEPT)
+                    .execute();
+            int status = execute.getStatus();
+            if(status!= HttpStatus.HTTP_OK && status!=HTTP_PARTIAL_CONTENT) {
+                // 部分存储（如 OSS ）不支持 HEAD；回退到 GET，只获取响应头
+                execute.close();
+                execute = HttpUtil.createRequest(Method.GET, fileUrl)
+                        .setFollowRedirects(true)
+                        .header("User-Agent", DEFAULT_USER_AGENT)
+                        .header("Referer", buildReferer(fileUrl))
+                        .header("Accept", DEFAULT_ACCEPT)
+                        .execute();
+                status = execute.getStatus();
+                if(status!= HttpStatus.HTTP_OK && status!=HTTP_PARTIAL_CONTENT) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件不存在或链接已失效");
+                }
             }
             //4.文件格式校验
             String contentType = execute.header(HTTP.CONTENT_TYPE);
@@ -72,5 +98,14 @@ public class UrlUploadPicture extends PictureUploadTemplate{
                 execute.close();
         }
 
+    }
+
+    private String buildReferer(String url) {
+        try {
+            URL parsedUrl = new URL(url);
+            return parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + "/";
+        } catch (MalformedURLException e) {
+            return "";
+        }
     }
 }

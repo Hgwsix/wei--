@@ -157,6 +157,11 @@ public class Picture implements Serializable {
      */
     @TableField("picColor")
     private String picColor;
+    /**
+     * 原图url
+     */
+    @TableField("originalUrl")
+    private String originalUrl;
 
 
 }

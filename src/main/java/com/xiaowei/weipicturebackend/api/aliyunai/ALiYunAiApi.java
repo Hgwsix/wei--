@@ -36,13 +36,13 @@ public class ALiYunAiApi {
      */
     public AliyunCreateTaskResponse createPictureOutPaintingTask(AliyunCreateOutPaintingTaskRequest aliyunCreateOutPaintingTaskRequest){
 
+        System.out.println(JSONUtil.toJsonStr(aliyunCreateOutPaintingTaskRequest));
         try (HttpResponse httpResponse = HttpUtil.createRequest(Method.POST, CREATE_OUT_PAINTING_TASK_URL)
                 .header("X-DashScope-Async", "enable")
                 .header("Authorization", "Bearer " + aliyunKey)
                 .header("Content-Type", "application/json")
                 .body(JSONUtil.toJsonStr(aliyunCreateOutPaintingTaskRequest))
                 .execute()) {
-            log.info("DashScope response status={}, body={}", httpResponse.getStatus(), httpResponse.body());
             if (httpResponse.getStatus() != HttpStatus.HTTP_OK) {
                 log.error("请求异常：{}", httpResponse.body());
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI扩图失败");

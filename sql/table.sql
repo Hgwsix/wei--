@@ -58,6 +58,7 @@ CREATE INDEX idx_reviewStatus ON picture (reviewStatus);
 ALTER TABLE picture
     -- 添加新列
     ADD COLUMN thumbnailUrl varchar(512) NULL COMMENT '缩略图 url';
+
 -- 空间表
 create table if not exists space
 (
@@ -87,3 +88,6 @@ CREATE INDEX idx_spaceId ON picture (spaceId);
 
 ALTER TABLE picture
     ADD COLUMN picColor varchar(16) null comment '图片主色调';
+ALTER TABLE picture
+    -- 添加新列
+    ADD COLUMN originalUrl varchar(512) NULL COMMENT '原图 url';

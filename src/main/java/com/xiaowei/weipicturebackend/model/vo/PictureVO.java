@@ -1,6 +1,7 @@
 package com.xiaowei.weipicturebackend.model.vo;
 
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
@@ -105,6 +106,10 @@ public class PictureVO implements Serializable {
      * 图片主色调
      */
     private String picColor;
+    /**
+     * 原图url
+     */
+    private String originalUrl;
 
 
     private static final long serialVersionUID = 1L;  
