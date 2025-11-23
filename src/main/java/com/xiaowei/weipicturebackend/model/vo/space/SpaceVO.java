@@ -1,5 +1,6 @@
-package com.xiaowei.weipicturebackend.model.vo;
+package com.xiaowei.weipicturebackend.model.vo.space;
 
+import com.xiaowei.weipicturebackend.model.vo.UserVO;
 import lombok.Data;
 
 import java.io.Serializable;

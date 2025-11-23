@@ -16,21 +16,19 @@ import com.xiaowei.weipicturebackend.model.entity.Space;
 import com.xiaowei.weipicturebackend.mapper.SpaceMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaowei.weipicturebackend.model.entity.User;
-import com.xiaowei.weipicturebackend.model.vo.SpaceVO;
+import com.xiaowei.weipicturebackend.model.vo.space.SpaceVO;
 import com.xiaowei.weipicturebackend.model.vo.UserVO;
 import com.xiaowei.weipicturebackend.service.SpaceService;
 import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 /**
@@ -194,6 +192,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         }
 
 
+    }
+
+    @Override
+    public void checkSpaceAuth(Space space, User loginUser) {
+        //只有管理员和本人可以操作
+        if (!space.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限编辑该空间");
+        }
     }
 
 

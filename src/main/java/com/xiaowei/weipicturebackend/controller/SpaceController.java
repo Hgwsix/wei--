@@ -16,7 +16,7 @@ import com.xiaowei.weipicturebackend.model.dto.space.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.model.entity.Space;
 import com.xiaowei.weipicturebackend.model.entity.User;
-import com.xiaowei.weipicturebackend.model.vo.SpaceVO;
+import com.xiaowei.weipicturebackend.model.vo.space.SpaceVO;
 import com.xiaowei.weipicturebackend.service.PictureService;
 import com.xiaowei.weipicturebackend.service.SpaceService;
 import com.xiaowei.weipicturebackend.service.UserService;
@@ -71,15 +71,13 @@ public class SpaceController {
         Long id = deleteRequest.getId();
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
-        //权限校验（只要管理员和本人可以删除空间）
-        if (!loginUser.getId().equals(id) && !userService.isAdmin(loginUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
         //检查是否存在数据
         Space oldSpace = spaceService.getById(id);
         if (oldSpace == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "数据不存在");
         }
+        //权限校验（只要管理员和本人可以删除空间）
+        spaceService.checkSpaceAuth(oldSpace, loginUser);
         //删除空间
         boolean remove = spaceService.removeById(id);
         if (!remove) {
@@ -215,11 +213,9 @@ public class SpaceController {
         //2.查询数据库是否存在需要编辑的空间
         Space oldSpace = spaceService.getById(Space.getId());
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR, "数据不存在");
-        //3.校验信息，只有本人可以编辑
+        //3.校验信息，只有本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
-        if(!oldSpace.getUserId().equals(loginUser.getId())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有权限编辑");
-        }
+        spaceService.checkSpaceAuth(oldSpace, loginUser);
         //4.设置编辑时间
         Space.setEditTime(LocalDateTime.now());
         //5.更新数据库
