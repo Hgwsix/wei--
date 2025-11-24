@@ -4,13 +4,10 @@ import com.xiaowei.weipicturebackend.common.BaseResponse;
 import com.xiaowei.weipicturebackend.common.ResultUtils;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
-import com.xiaowei.weipicturebackend.model.dto.space.analyze.SpaceCategoryAnalyzeRequest;
-import com.xiaowei.weipicturebackend.model.dto.space.analyze.SpaceTagAnalyzeRequest;
-import com.xiaowei.weipicturebackend.model.dto.space.analyze.SpaceUsageAnalyzeRequest;
+import com.xiaowei.weipicturebackend.model.dto.space.analyze.*;
+import com.xiaowei.weipicturebackend.model.entity.Space;
 import com.xiaowei.weipicturebackend.model.entity.User;
-import com.xiaowei.weipicturebackend.model.vo.space.analyze.SpaceCategoryAnalyzeResponse;
-import com.xiaowei.weipicturebackend.model.vo.space.analyze.SpaceTagAnalyzeResponse;
-import com.xiaowei.weipicturebackend.model.vo.space.analyze.SpaceUsageAnalyzeResponse;
+import com.xiaowei.weipicturebackend.model.vo.space.analyze.*;
 import com.xiaowei.weipicturebackend.service.SpaceAnalyzeService;
 import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
@@ -23,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/space")
+@RequestMapping("/space/analyze")
 public class SpaceAnalyzeController {
 
     @Resource
@@ -57,5 +54,32 @@ public class SpaceAnalyzeController {
         User loginUser = userService.getLoginUser(request);
         List<SpaceTagAnalyzeResponse> spaceTagAnalyze = spaceAnalyzeService.getSpaceTagAnalyze(spaceTagAnalyzeRequest, loginUser);
         return ResultUtils.success(spaceTagAnalyze);
+    }
+
+    @PostMapping("/size")
+    public BaseResponse<List<SpaceSizeAnalyzeResponse>> getSpaceSizeAnalyze(@RequestBody SpaceSizeAnalyzeRequest spaceSizeAnalyzeRequest,
+                                                                            HttpServletRequest request) {
+        ThrowUtils.throwIf(spaceSizeAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        List<SpaceSizeAnalyzeResponse> spaceSizeAnalyze = spaceAnalyzeService.getSpaceSizeAnalyze(spaceSizeAnalyzeRequest, loginUser);
+        return ResultUtils.success(spaceSizeAnalyze);
+    }
+
+    @PostMapping("/user")
+    public BaseResponse<List<SpaceUserAnalyzeResponse>> getSpaceUserAnalyze(@RequestBody SpaceUserAnalyzeRequest spaceUserAnalyzeRequest,
+                                                                            HttpServletRequest request) {
+        ThrowUtils.throwIf(spaceUserAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        List<SpaceUserAnalyzeResponse> spaceUserAnalyze = spaceAnalyzeService.getSpaceUserAnalyze(spaceUserAnalyzeRequest, loginUser);
+        return ResultUtils.success(spaceUserAnalyze);
+    }
+
+    @PostMapping("/rank")
+    public BaseResponse<List<Space>> getSpaceRankAnalyze(@RequestBody SpaceRankAnalyzeRequest spaceRankAnalyzeRequest,
+                                                         HttpServletRequest request) {
+        ThrowUtils.throwIf(spaceRankAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        List<Space> spaceRankAnalyze = spaceAnalyzeService.getSpaceRankAnalyze(spaceRankAnalyzeRequest, loginUser);
+        return ResultUtils.success(spaceRankAnalyze);
     }
 }

@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * 空间图片标签分析响应类
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

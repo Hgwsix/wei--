@@ -44,7 +44,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private SpaceService spaceService;
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword,HttpServletRequest request) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword, HttpServletRequest request) {
         //1.参数校验
         if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码不能为空");
@@ -189,12 +189,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String sortOrder = userQueryRequest.getSortOrder();
 
         LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<User>()
-                .eq(id!=null,User::getId, id)
-                .like(StrUtil.isNotBlank(userAccount),User::getUserAccount, userAccount)
-                .like(StrUtil.isNotBlank(userName),User::getUserName, userName)
-                .like(StrUtil.isNotBlank(userProfile),User::getUserProfile, userProfile)
-                .eq(StrUtil.isNotBlank(userRole),User::getUserRole, userRole)
-                .orderBy(StrUtil.isNotBlank(sortField),sortOrder.equals("ascend"), User::getCreateTime);
+                .eq(id != null, User::getId, id)
+                .like(StrUtil.isNotBlank(userAccount), User::getUserAccount, userAccount)
+                .like(StrUtil.isNotBlank(userName), User::getUserName, userName)
+                .like(StrUtil.isNotBlank(userProfile), User::getUserProfile, userProfile)
+                .eq(StrUtil.isNotBlank(userRole), User::getUserRole, userRole)
+                .orderBy(StrUtil.isNotBlank(sortField), sortOrder.equals("ascend"), User::getCreateTime);
         return userLambdaQueryWrapper;
     }
 
