@@ -5,6 +5,7 @@ import cn.hutool.setting.yaml.YamlUtil;
 import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.OutputFile;
 import com.baomidou.mybatisplus.generator.config.rules.DbColumnType;
+import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 
 import java.sql.Types;
@@ -15,7 +16,7 @@ import java.util.Map;
 public class MyCodeGenerator {
     public static void main(String[] args) {
         // 数据库表名
-        final String[] TABLE_NAME = {"space"};
+        final String[] TABLE_NAME = {"space_user"};
 
         Dict dict = YamlUtil.loadByPath("application.yml");
         Map<String, Object> databaseConfiguration=dict.getByPath("spring.datasource");
@@ -62,13 +63,18 @@ public class MyCodeGenerator {
                         builder.addInclude(TABLE_NAME) // 设置需要生成的表名，多个表用逗号分隔
                                 .addTablePrefix("t_", "c_") // 设置过滤表前缀
                                 .entityBuilder()
+                                .naming(NamingStrategy.underline_to_camel) // 表名转驼峰作为实体类名
+                                .columnNaming(NamingStrategy.underline_to_camel) // 列名下划线转驼峰
                                 .enableLombok() // 启用 Lombok
                                 .enableTableFieldAnnotation() // 启用字段注解
+                                .build()
                                 .controllerBuilder()
                                 .enableRestStyle() // 启用 REST 风格
+                                .build()
                                 .serviceBuilder()
                                 .formatServiceFileName("%sService") // 设置 Service 接口名称格式
                                 .formatServiceImplFileName("%sServiceImpl") // 设置 Service 实现类名称格式
+                                .build()
                 )
                 .templateEngine(new FreemarkerTemplateEngine()) // 使用Freemarker引擎模板，默认的是Velocity引擎模板
                 .execute();

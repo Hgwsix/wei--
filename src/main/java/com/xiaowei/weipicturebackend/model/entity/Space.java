@@ -96,4 +96,9 @@ public class Space implements Serializable {
     @TableField("isDelete")
     @TableLogic
     private Byte isDelete;
+    /**
+     * 空间类型
+     */
+    @TableField("spaceType")
+    private Integer spaceType;
 }

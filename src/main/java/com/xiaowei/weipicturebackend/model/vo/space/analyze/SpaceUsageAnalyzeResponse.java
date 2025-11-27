@@ -21,7 +21,7 @@ public class SpaceUsageAnalyzeResponse implements Serializable {
     /**
      * 空间使用比例
      */
-    private Double sizeUsageRadio;
+    private Double sizeUsageRatio;
     /**
      * 已使用图片数量
      */
@@ -33,6 +33,6 @@ public class SpaceUsageAnalyzeResponse implements Serializable {
     /**
      * 图片数量使用比例
      */
-    private Double countUsageRadio;
+    private Double countUsageRatio;
 
 }

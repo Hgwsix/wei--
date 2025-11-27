@@ -63,9 +63,9 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
             spaceUsageAnalyzeResponse.setUsedCount(usedCount);
             //分析整个图库和公共图库时没有容量和数量的上限
             spaceUsageAnalyzeResponse.setMaxSize(null);
-            spaceUsageAnalyzeResponse.setSizeUsageRadio(null);
+            spaceUsageAnalyzeResponse.setSizeUsageRatio(null);
             spaceUsageAnalyzeResponse.setMaxCount(null);
-            spaceUsageAnalyzeResponse.setCountUsageRadio(null);
+            spaceUsageAnalyzeResponse.setCountUsageRatio(null);
             //返回结果
             return spaceUsageAnalyzeResponse;
         }else{
@@ -84,10 +84,10 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
             spaceUsageAnalyzeResponse.setUsedCount(space.getTotalCount());
             spaceUsageAnalyzeResponse.setMaxCount(space.getMaxCount());
             //计算比例
-            double sizeUsageRadio = NumberUtil.round(space.getTotalSize() * 100.0 / space.getMaxSize(), 2).doubleValue();
-            spaceUsageAnalyzeResponse.setSizeUsageRadio(sizeUsageRadio);
-            double countUsageRadio = NumberUtil.round(space.getTotalCount() * 100.0 / space.getMaxCount(), 2).doubleValue();
-            spaceUsageAnalyzeResponse.setCountUsageRadio(countUsageRadio);
+            double sizeUsageRatio = NumberUtil.round(space.getTotalSize() * 100.0 / space.getMaxSize(), 2).doubleValue();
+            spaceUsageAnalyzeResponse.setSizeUsageRatio(sizeUsageRatio);
+            double countUsageRatio = NumberUtil.round(space.getTotalCount() * 100.0 / space.getMaxCount(), 2).doubleValue();
+            spaceUsageAnalyzeResponse.setCountUsageRatio(countUsageRatio);
             //返回结果
             return spaceUsageAnalyzeResponse;
         }
@@ -174,6 +174,7 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space> imp
         checkSpaceAnalyzeAuth(spaceUserAnalyzeRequest, loginUser);
         //判断用户是否存在
         Long userId = spaceUserAnalyzeRequest.getUserId();
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR, "空间图片用户行为分析的id字段为空");
         Optional.ofNullable(userService.getById(userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在"));
         //构造查询条件
