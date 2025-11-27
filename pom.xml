@@ -67,12 +67,12 @@
             <version>3.5.14</version>
         </dependency>
 
-        <!--&lt;!&ndash; Freemarker 模板引擎（代码生成器需要）&ndash;&gt;
-         <dependency>
-             <groupId>org.freemarker</groupId>
-             <artifactId>freemarker</artifactId>
-             <version>2.3.32</version>
-         </dependency>-->
+        <!--        &lt;!&ndash; Freemarker 模板引擎（代码生成器需要）&ndash;&gt;
+                 <dependency>
+                     <groupId>org.freemarker</groupId>
+                     <artifactId>freemarker</artifactId>
+                     <version>2.3.32</version>
+                 </dependency>-->
 
         <!-- Knife4j API 文档 -->
         <dependency>
