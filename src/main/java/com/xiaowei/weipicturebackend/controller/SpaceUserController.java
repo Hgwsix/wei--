@@ -8,6 +8,8 @@ import com.xiaowei.weipicturebackend.common.ResultUtils;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.manager.auth.anotation.SaSpaceCheckPermission;
+import com.xiaowei.weipicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaowei.weipicturebackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.xiaowei.weipicturebackend.model.dto.spaceuser.SpaceUserEditRequest;
 import com.xiaowei.weipicturebackend.model.dto.spaceuser.SpaceUserQueryRequest;
@@ -40,6 +42,7 @@ public class SpaceUserController {
     private SpaceUserService spaceUserService;
 
     @PostMapping("/add")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest, HttpServletRequest request){
         ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(spaceUserService.addSpaceUser(spaceUserAddRequest,request));
@@ -51,6 +54,7 @@ public class SpaceUserController {
      * @return
      */
     @PostMapping("/delete")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> deleteSpaceUserById(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest request) {
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
@@ -61,6 +65,10 @@ public class SpaceUserController {
         if (oldSpaceUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "数据不存在");
         }
+        //判断是否为空间成员
+        if(oldSpaceUser.getUserId()==null){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"该空间中没有此成员");
+        }
         //删除
         boolean remove = spaceUserService.removeById(id);
         ThrowUtils.throwIf(!remove, ErrorCode.PARAMS_ERROR, "删除失败");
@@ -70,6 +78,7 @@ public class SpaceUserController {
      * 查询某个成员在某个空间的信息
      */
     @PostMapping("/get")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<SpaceUser> getSpaceUserById(@RequestBody SpaceUserQueryRequest queryRequest) {
         ThrowUtils.throwIf(queryRequest == null, ErrorCode.PARAMS_ERROR);
         //必须传入spaceId和userId
@@ -86,7 +95,8 @@ public class SpaceUserController {
      * @param queryRequest
      * @return
      */
-    @PostMapping("/list/page")
+    @PostMapping("/list")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<List<SpaceUser>> listSpaceUserByPage(@RequestBody SpaceUserQueryRequest queryRequest) {
         ThrowUtils.throwIf(queryRequest == null, ErrorCode.PARAMS_ERROR);
         List<SpaceUser> spaceUserList = spaceUserService.list(spaceUserService.getQueryWrapper(queryRequest));
@@ -94,18 +104,28 @@ public class SpaceUserController {
     }
 
     @PostMapping("/edit")
-        public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest SpaceUserEditRequest) {
-        ThrowUtils.throwIf(SpaceUserEditRequest == null, ErrorCode.PARAMS_ERROR);
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
+        public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest) {
+        ThrowUtils.throwIf(spaceUserEditRequest == null, ErrorCode.PARAMS_ERROR);
         //获取编辑信息
-        SpaceUser SpaceUser=new SpaceUser();
-        BeanUtil.copyProperties(SpaceUserEditRequest, SpaceUser);
+        SpaceUser spaceUser=new SpaceUser();
+        BeanUtil.copyProperties(spaceUserEditRequest, spaceUser);
         //校验空间信息
-        spaceUserService.validSpaceUser(SpaceUser, false);
+        spaceUserService.validSpaceUser(spaceUser, false);
         //查询数据库是否存在需要编辑的空间
-        SpaceUser oldSpaceUser = spaceUserService.getById(SpaceUser.getId());
+        SpaceUser oldSpaceUser = spaceUserService.getById(spaceUser.getId());
         ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR, "数据不存在");
+        //判断是否为空间成员
+        if(oldSpaceUser.getUserId()==null){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"该空间中没有此成员");
+        }
+        //如果要更新的权限和原来的一致，则不需要更新
+        if(oldSpaceUser.getSpaceRole().equals(spaceUserEditRequest.getSpaceRole()))
+        {
+            return ResultUtils.success(true);
+        }
         //更新数据库
-        boolean update = spaceUserService.updateById(SpaceUser);
+        boolean update = spaceUserService.updateById(spaceUser);
         ThrowUtils.throwIf(!update,ErrorCode.OPERATION_ERROR,"编辑失败");
         return ResultUtils.success(true);
     }

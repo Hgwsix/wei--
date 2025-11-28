@@ -17,6 +17,8 @@ import com.xiaowei.weipicturebackend.enums.PictureReviewStatusEnum;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.manager.auth.anotation.SaSpaceCheckPermission;
+import com.xiaowei.weipicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaowei.weipicturebackend.model.dto.picture.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.model.entity.Space;
@@ -67,6 +69,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/upload")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVO> uploadPicture(@RequestPart("file") MultipartFile multipartFile,
                                                  @ModelAttribute PictureUploadRequest uploadPictureRequest,
                                                  HttpServletRequest request) {
@@ -84,6 +87,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/upload/url")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody PictureUploadRequest uploadPictureRequest,
                                                       HttpServletRequest request) {
         ThrowUtils.throwIf(uploadPictureRequest == null, ErrorCode.PARAMS_ERROR, "文件不能为空");
@@ -98,6 +102,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/delete")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_DELETE)
     public BaseResponse<Boolean> deletePictureById(@RequestBody DeleteRequest deleteRequest,
                                                    HttpServletRequest request) {
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
@@ -223,6 +228,7 @@ public class PictureController {
     }
 
     @PostMapping("/edit")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest,
                                              HttpServletRequest request) {
         ThrowUtils.throwIf(pictureEditRequest == null, ErrorCode.PARAMS_ERROR);
@@ -319,6 +325,7 @@ public class PictureController {
     }
 
     @PostMapping("/edit/batch")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchRequest pictureEditByBatchRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(pictureEditByBatchRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
@@ -327,6 +334,7 @@ public class PictureController {
     }
 
     @PostMapping("/out_painting/create_task")
+    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<AliyunCreateTaskResponse> createPictureOutPaintingTask(@RequestBody CreatePictureOutPaintingRequest createPictureOutPaintingRequest,
                                                                                HttpServletRequest request) {
         ThrowUtils.throwIf(createPictureOutPaintingRequest == null, ErrorCode.PARAMS_ERROR);

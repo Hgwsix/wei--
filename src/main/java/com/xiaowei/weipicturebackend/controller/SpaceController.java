@@ -12,6 +12,8 @@ import com.xiaowei.weipicturebackend.enums.SpaceLevelEnums;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.manager.auth.anotation.SaSpaceCheckPermission;
+import com.xiaowei.weipicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaowei.weipicturebackend.model.dto.space.*;
 import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.model.entity.Space;
@@ -54,6 +56,7 @@ public class SpaceController {
 
 
    @PostMapping("/add")
+   @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
    public BaseResponse<Long> addSpace(@RequestBody SpaceAddRequest spaceAddRequest, HttpServletRequest request){
        ThrowUtils.throwIf(spaceAddRequest == null, ErrorCode.PARAMS_ERROR);
        return ResultUtils.success(spaceService.addSpace(spaceAddRequest,request));
@@ -65,6 +68,7 @@ public class SpaceController {
      * @return
      */
     @PostMapping("/delete")
+
     public BaseResponse<Boolean> deleteSpaceById(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest request) {
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);

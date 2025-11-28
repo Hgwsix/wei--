@@ -10,6 +10,7 @@ import com.xiaowei.weipicturebackend.enums.SpaceLevelEnums;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.manager.auth.StpKit;
 import com.xiaowei.weipicturebackend.model.dto.space.SpaceAddRequest;
 import com.xiaowei.weipicturebackend.model.dto.space.SpaceEditRequest;
 import com.xiaowei.weipicturebackend.model.dto.user.UserQueryRequest;
@@ -118,7 +119,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         //4.记录用户登入状态
         request.getSession().setAttribute(UserConstants.USER_LOGIN_STATE, user);
-
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(UserConstants.USER_LOGIN_STATE, user);
         return user;
     }
 
