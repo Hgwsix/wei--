@@ -25,6 +25,8 @@ import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
 import com.xiaowei.weipicturebackend.manager.CosManager;
+import com.xiaowei.weipicturebackend.manager.auth.StpKit;
+import com.xiaowei.weipicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaowei.weipicturebackend.manager.upload.FileUploadPicture;
 import com.xiaowei.weipicturebackend.manager.upload.PictureUploadTemplate;
 import com.xiaowei.weipicturebackend.manager.upload.UrlUploadPicture;
@@ -439,6 +441,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
                 }
                 ThrowUtils.throwIf(!space.getUserId().equals(loginUser.getId()), ErrorCode.NO_AUTH_ERROR, "没有空间权限");
                 queryRequest.setNullSpaceId(false);
+                //检查是否有查看图片的权限
+                boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
+                ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR, "没有查看图片的权限");
             }
             //如果没有传入spaceId，则查询所有图片，需要过审
             else {
@@ -465,7 +470,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
     @Override
     public void checkPictureAuth(Picture picture, User loginUser) {
-        Long spaceId = picture.getSpaceId();
+        /*Long spaceId = picture.getSpaceId();
         if (spaceId == null) {
             //公共图片，仅本人和管理员可以操作图片
             if (!userService.isAdmin(loginUser) && !loginUser.getId().equals(picture.getUserId())) {
@@ -476,7 +481,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             if (!loginUser.getId().equals(picture.getUserId())) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }
-        }
+        }*/
     }
 
     @Override

@@ -17,6 +17,8 @@ import com.xiaowei.weipicturebackend.enums.PictureReviewStatusEnum;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.manager.auth.SpaceUserAuthManager;
+import com.xiaowei.weipicturebackend.manager.auth.StpKit;
 import com.xiaowei.weipicturebackend.manager.auth.anotation.SaSpaceCheckPermission;
 import com.xiaowei.weipicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaowei.weipicturebackend.model.dto.picture.*;
@@ -57,8 +59,15 @@ public class PictureController {
 
     @Resource
     private SpaceService spaceService;
-    @Autowired
+
+    @Resource
     private ALiYunAiApi aLiYunAiApi;
+
+    @Resource
+    private StpKit stpKit;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     /**
      * 上传图片（可以重复上传）
@@ -198,9 +207,13 @@ public class PictureController {
         Picture picture = pictureService.getById(id);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
         //检查权限
-        if(picture.getSpaceId()!=null){
-            User loginUser = userService.getLoginUser(request);
-            pictureService.checkPictureAuth(picture, loginUser);
+        Space space = null;
+        Long spaceId = picture.getSpaceId();
+        if (spaceId != null) {
+            boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
+            ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR);
+            space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
         }
         //只能查看已经审核通过的图片
         ThrowUtils.throwIf(!picture.getReviewStatus().equals(PictureReviewStatusEnum.PASS.getValue()), ErrorCode.NO_AUTH_ERROR);
@@ -212,6 +225,9 @@ public class PictureController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
         }
         pictureVO.setUser(userService.getUserVO(byId));
+        //获取权限列表
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, userService.getLoginUser(request));
+        pictureVO.setPermissionList(permissionList);
         return ResultUtils.success(pictureVO);
 
     }

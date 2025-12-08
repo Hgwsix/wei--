@@ -92,11 +92,11 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
 
             if(userListMap.containsKey(userId)){
                 UserVO userVO = userService.getUserVO(userListMap.get(userId).get(0));
-                spaceUserVO.setUserVO(userVO);
+                spaceUserVO.setUser(userVO);
             }
             if(spaceListMap.containsKey(spaceId)){
                 SpaceVO spaceVO = spaceService.getSpaceVO(spaceListMap.get(spaceId).get(0));
-                spaceUserVO.setSpaceVO(spaceVO);
+                spaceUserVO.setSpace(spaceVO);
             }
         });
         return spaceUserVOList;

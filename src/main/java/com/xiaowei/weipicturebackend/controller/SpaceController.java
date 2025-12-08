@@ -12,6 +12,7 @@ import com.xiaowei.weipicturebackend.enums.SpaceLevelEnums;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
+import com.xiaowei.weipicturebackend.manager.auth.SpaceUserAuthManager;
 import com.xiaowei.weipicturebackend.manager.auth.anotation.SaSpaceCheckPermission;
 import com.xiaowei.weipicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaowei.weipicturebackend.model.dto.space.*;
@@ -54,8 +55,11 @@ public class SpaceController {
    @Resource
    private PictureService pictureService;
 
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
-   @PostMapping("/add")
+
+    @PostMapping("/add")
    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
    public BaseResponse<Long> addSpace(@RequestBody SpaceAddRequest spaceAddRequest, HttpServletRequest request){
        ThrowUtils.throwIf(spaceAddRequest == null, ErrorCode.PARAMS_ERROR);
@@ -155,40 +159,20 @@ public class SpaceController {
     @GetMapping("/get/vo")
     public BaseResponse<SpaceVO> getSpaceVOById(@RequestParam Long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
-        Space Space = spaceService.getById(id);
-        ThrowUtils.throwIf(Space == null, ErrorCode.NOT_FOUND_ERROR);
+        Space space = spaceService.getById(id);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //将用户脱敏后信息封装进空间封装类
-        SpaceVO SpaceVO = spaceService.getSpaceVO(Space);
-        Long userId = Space.getUserId();
+        SpaceVO SpaceVO = spaceService.getSpaceVO(space);
+        Long userId = space.getUserId();
         User byId = userService.getById(userId);
         if(byId == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
         }
         SpaceVO.setUser(userService.getUserVO(byId));
 
-        // 计算权限列表
-        List<String> permissionList = new ArrayList<>();
-        try {
-            // 尝试获取当前登录用户
-            User loginUser = userService.getLoginUser(request);
-            Long loginUserId = loginUser.getId();
-
-            // 如果是空间的创建者或者是管理员，拥有所有权限
-            if (Space.getUserId().equals(loginUserId) || userService.isAdmin(loginUser)) {
-                permissionList.add("spaceUser:manage");  // 空间成员管理权限
-                permissionList.add("picture:view");      // 图片查看权限
-                permissionList.add("picture:upload");    // 图片上传权限
-                permissionList.add("picture:edit");      // 图片编辑权限
-                permissionList.add("picture:delete");    // 图片删除权限
-            } else {
-                // 其他用户可能只有查看权限（可以根据实际业务需求调整）
-                permissionList.add("picture:view");
-            }
-        } catch (Exception e) {
-            // 如果未登录，则只有查看权限
-            permissionList.add("picture:view");
-        }
-
+        User loginUser = userService.getLoginUser(request);
+        // 获取权限列表
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
         SpaceVO.setPermissionList(permissionList);
         return ResultUtils.success(SpaceVO);
 

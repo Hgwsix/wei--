@@ -25,6 +25,7 @@ import com.xiaowei.weipicturebackend.service.SpaceUserService;
 import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -37,6 +38,7 @@ import java.util.*;
 /**
  * 自定义权限加载接口实现类
  */
+@Slf4j
 @Component    // 保证此类被 SpringBoot 扫描，完成 Sa-Token 的自定义权限验证扩展
 public class StpInterfaceImpl implements StpInterface {
 
@@ -193,6 +195,8 @@ public class StpInterfaceImpl implements StpInterface {
                     }
             }
             authRequest=BeanUtil.toBean(paramMap, SpaceUserAuthContext.class);
+            log.info("authRequest:{}", authRequest);
+
         }
         Long id = authRequest.getId();
         if (id==null) {

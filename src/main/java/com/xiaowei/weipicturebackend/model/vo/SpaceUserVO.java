@@ -34,11 +34,11 @@ public class SpaceUserVO implements Serializable {
     /**
      * 用户信息
      */
-    private UserVO userVO;
+    private UserVO user;
     /**
      * 空间信息
      */
-    private SpaceVO spaceVO;
+    private SpaceVO space;
 
     private static final long serialVersionUID = 1L;
 }
