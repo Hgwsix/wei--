@@ -179,4 +179,15 @@ public class UserController {
         userVOPage.setRecords(userService.getUserVOList(userList));
         return ResultUtils.success(userVOPage);
     }
+    /**
+     * 用户编辑自己信息
+     */
+    @PostMapping("/edit/myself")
+    public BaseResponse<Boolean> editUserInfo(HttpServletRequest request, @RequestBody UserInfoEditRequest userInfoEditRequest) {
+        ThrowUtils.throwIf(userInfoEditRequest == null, ErrorCode.PARAMS_ERROR);
+        Long userId = userInfoEditRequest.getUserId();
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR);
+        boolean result = userService.userInfoEdit(request, userInfoEditRequest);
+        return ResultUtils.success(result);
+    }
 }

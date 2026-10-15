@@ -42,8 +42,6 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
 
-    @Resource
-    private SpaceUserService spaceUserService;
 
     @Override
     public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,

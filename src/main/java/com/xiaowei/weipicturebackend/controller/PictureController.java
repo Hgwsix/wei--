@@ -9,6 +9,8 @@ import com.xiaowei.weipicturebackend.api.aliyunai.ALiYunAiApi;
 import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateOutPaintingTaskRequest;
 import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunCreateTaskResponse;
 import com.xiaowei.weipicturebackend.api.aliyunai.model.AliyunQueryTaskResponse;
+import com.xiaowei.weipicturebackend.api.imageSearch.model.ImageSearchResult;
+import com.xiaowei.weipicturebackend.api.imageSearch.sub.ImageSearchApiFacade;
 import com.xiaowei.weipicturebackend.common.BaseResponse;
 import com.xiaowei.weipicturebackend.common.DeleteRequest;
 import com.xiaowei.weipicturebackend.common.ResultUtils;
@@ -364,6 +366,20 @@ public class PictureController {
     @GetMapping("/out_painting/get_task")
     public BaseResponse<AliyunQueryTaskResponse> getPictureOutPaintingTask(String taskId) {
         return ResultUtils.success(aLiYunAiApi.getOutPaintingTaskStatus(taskId));
+    }
+
+    /**
+     * 以图搜图
+     */
+    @PostMapping("/search/picture")
+    public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest) {
+        ThrowUtils.throwIf(searchPictureByPictureRequest == null, ErrorCode.PARAMS_ERROR);
+        Long pictureId = searchPictureByPictureRequest.getPictureId();
+        ThrowUtils.throwIf(pictureId == null || pictureId <= 0, ErrorCode.PARAMS_ERROR);
+        Picture oldPicture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+        List<ImageSearchResult> resultList = ImageSearchApiFacade.searchImage(oldPicture.getUrl());
+        return ResultUtils.success(resultList);
     }
 
 }

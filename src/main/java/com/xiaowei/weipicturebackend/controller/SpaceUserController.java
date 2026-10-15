@@ -97,10 +97,11 @@ public class SpaceUserController {
      */
     @PostMapping("/list")
     @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
-    public BaseResponse<List<SpaceUser>> listSpaceUserByPage(@RequestBody SpaceUserQueryRequest queryRequest) {
+    public BaseResponse<List<SpaceUserVO>> listSpaceUserByPage(@RequestBody SpaceUserQueryRequest queryRequest) {
         ThrowUtils.throwIf(queryRequest == null, ErrorCode.PARAMS_ERROR);
         List<SpaceUser> spaceUserList = spaceUserService.list(spaceUserService.getQueryWrapper(queryRequest));
-        return ResultUtils.success(spaceUserList);
+        // 填充关联的用户、空间信息，供前端展示用户名/头像等
+        return ResultUtils.success(spaceUserService.getSpaceUserVOList(spaceUserList));
     }
 
     @PostMapping("/edit")

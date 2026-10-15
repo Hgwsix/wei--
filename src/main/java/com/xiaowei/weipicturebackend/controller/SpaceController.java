@@ -63,7 +63,7 @@ public class SpaceController {
    @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.SPACE_USER_MANAGE)
    public BaseResponse<Long> addSpace(@RequestBody SpaceAddRequest spaceAddRequest, HttpServletRequest request){
        ThrowUtils.throwIf(spaceAddRequest == null, ErrorCode.PARAMS_ERROR);
-       return ResultUtils.success(spaceService.addSpace(spaceAddRequest,request));
+       return ResultUtils.success(spaceService.addSpace(spaceAddRequest,request,null));
    }
     /**
      * 根据id删除空间（仅管理员和本人）

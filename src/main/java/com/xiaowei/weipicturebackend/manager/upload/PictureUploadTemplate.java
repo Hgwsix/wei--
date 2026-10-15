@@ -36,7 +36,7 @@ public abstract class PictureUploadTemplate {
         //构造上传的路径
         String uuid = RandomUtil.randomString(16);
         String originalFileName = getOriginalFilename(inputSource);
-        String uploadFileName = String.format("%s_%s/%s", DateUtil.date(new Date()), uuid,"picture."+ FileUtil.getSuffix(originalFileName));
+        String uploadFileName = String.format("%s_%s/%s", DateUtil.format(new Date(), "yyyy-MM-dd_HH-mm-ss"), uuid, "picture." + FileUtil.getSuffix(originalFileName));
         String uploadPath = String.format("%s/%s", uploadPathPrefix, uploadFileName);
 
         File tempFile = null;
@@ -163,7 +163,7 @@ public abstract class PictureUploadTemplate {
         // 设置图片名称（不带扩展名）
         uploadPictureResult.setName(FileUtil.mainName(originalFileName));
         // 设置图片访问URL（主机地址+上传路径）
-        uploadPictureResult.setUrl(cosClientConfig.getHost()+File.separator+formatCiObject.getKey());
+        uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + formatCiObject.getKey());
         // 设置图片宽度
         uploadPictureResult.setPicWidth(picWidth);
         // 设置图片高度
@@ -176,7 +176,7 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicFormat(formatCiObject.getFormat());
         //设置图片缩略图url
         if(thumbnailCiobject!=null) {
-            uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + File.separator + thumbnailCiobject.getKey());
+            uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + "/" + thumbnailCiobject.getKey());
         }
         //设置图片主色调
         uploadPictureResult.setPicColor(imageInfo.getAve());

@@ -1,6 +1,7 @@
 package com.xiaowei.weipicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.xiaowei.weipicturebackend.model.dto.user.UserInfoEditRequest;
 import com.xiaowei.weipicturebackend.model.dto.user.UserQueryRequest;
 import com.xiaowei.weipicturebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -28,7 +29,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword 确认密码
      * @return 注册结果，返回long类型数据，可能是用户ID或状态码
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword,HttpServletRequest request);
+    long userRegister(String userAccount, String userPassword, String checkPassword, HttpServletRequest request);
 
     /**
      * 获取加密后的密码字符串
@@ -106,4 +107,14 @@ public interface UserService extends IService<User> {
      * @return 如果用户是管理员则返回true，否则返回false
      */
     boolean isAdmin(User user);
+
+
+    /**
+     * 处理用户信息编辑请求的方法
+     *
+     * @param request             HttpServletRequest对象，包含HTTP请求信息
+     * @param userInfoEditRequest 用户信息编辑请求对象，包含需要修改的用户信息
+     * @return 返回boolean类型，表示用户信息编辑操作是否成功
+     */
+    boolean userInfoEdit(HttpServletRequest request, UserInfoEditRequest userInfoEditRequest);
 }

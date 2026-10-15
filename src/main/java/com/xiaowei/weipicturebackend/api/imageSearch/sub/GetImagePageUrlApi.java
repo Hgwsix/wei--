@@ -1,4 +1,5 @@
 package com.xiaowei.weipicturebackend.api.imageSearch.sub;
+
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -25,9 +26,9 @@ public class GetImagePageUrlApi {
         // 1. 准备请求参数
         Map<String, Object> formData = new HashMap<>();
         formData.put("image", imageUrl);
-/*        formData.put("tn", "pc");
+        formData.put("tn", "pc");
         formData.put("from", "pc");
-        formData.put("image_source", "PC_UPLOAD_URL");*/
+        formData.put("image_source", "PC_UPLOAD_URL");
         // 获取当前时间戳
         long uptime = System.currentTimeMillis();
         // 请求地址

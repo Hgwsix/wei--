@@ -60,7 +60,7 @@ public interface SpaceService extends IService<Space> {
      * @param spaceAddRequest 包含空间编辑信息的请求对象，用于添加新空间
      * @return 返回一个Boolean值，表示空间添加操作是否成功
      */
-    Long addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request);
+    Long addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request, Long loginUserId);
 
     /**
      * 填充空间等级的方法

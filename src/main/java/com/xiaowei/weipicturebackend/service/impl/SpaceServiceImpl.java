@@ -125,7 +125,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     }
 
     @Override
-    public Long addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
+    public Long addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request, Long loginUserId) {
         //为空间添加默认值
         if (StrUtil.isBlank(spaceAddRequest.getSpaceName())) {
             spaceAddRequest.setSpaceName("默认空间");
@@ -144,15 +144,22 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
         //2.校验空间数据
         this.validSpace(space, true);
         //3.获取当前登入用户
-        User loginUser = userService.getLoginUser(request);
-        Long loginUserId = loginUser.getId();
+        User loginUser=null;
+        if(request==null && loginUserId!=null){
+            loginUser = userService.getById(loginUserId);
+            if (loginUser == null) {
+                throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "用户不存在");
+            }
+        }else {
+            loginUser = userService.getLoginUser(request);
+        }
         //4.权限校验，普通用户只能创建普通级别的空间
         if(!userService.isAdmin(loginUser) && !SpaceLevelEnums.COMMON.getValue().equals(space.getSpaceLevel())){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"无权限创建该级别空间");
         }
 
         Long userId=loginUser.getId();
-        Object lock= lockMap.computeIfAbsent(userId,k->new Object());
+        Object lock = lockMap.computeIfAbsent(userId, k -> new Object());
         synchronized (lock) {
             try {
                 transactionTemplate.execute(status -> {
@@ -165,7 +172,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
                         throw new BusinessException(ErrorCode.OPERATION_ERROR, "每个用户每类空间只能创建一个");
                     }
                     //6.保存到数据库
-                    space.setUserId(loginUserId);
+                    space.setUserId(userId);
                     boolean saveResult = this.save(space);
                     ThrowUtils.throwIf(!saveResult, ErrorCode.OPERATION_ERROR, "添加空间失败");
                     //如果创建的是团队空间，创建者为管理员，自动在关联表新增一条信息

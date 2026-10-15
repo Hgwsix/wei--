@@ -10,11 +10,11 @@ import com.xiaowei.weipicturebackend.manager.websocket.model.PictureEditActionEn
 import com.xiaowei.weipicturebackend.manager.websocket.model.PictureEditMessageTypeEnum;
 import com.xiaowei.weipicturebackend.manager.websocket.model.PictureEditRequestMessage;
 import com.xiaowei.weipicturebackend.manager.websocket.model.PictureEditResponseMessage;
-import com.xiaowei.weipicturebackend.model.entity.Picture;
 import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.model.vo.UserVO;
 import com.xiaowei.weipicturebackend.service.UserService;
 import jakarta.annotation.Resource;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class PictureEditHandler extends TextWebSocketHandler {
 
     @Resource
@@ -65,9 +66,9 @@ public class PictureEditHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         //解析成编辑请求
-        PictureEditRequestMessage pictureEditRequestMessage = BeanUtil.toBean(message.getPayload(), PictureEditRequestMessage.class);
+        PictureEditRequestMessage pictureEditRequestMessage = JSONUtil.toBean(message.getPayload(), PictureEditRequestMessage.class);
         String type = pictureEditRequestMessage.getType();
-        PictureEditMessageTypeEnum pictureEditMessageTypeEnum = PictureEditMessageTypeEnum.valueOf(type);
+        PictureEditMessageTypeEnum pictureEditMessageTypeEnum = PictureEditMessageTypeEnum.getEnumByValue(type);
 
         //从会话中获取信息
         Long pictureId = (Long)session.getAttributes().get("pictureId");
@@ -139,7 +140,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
             //构造响应
             PictureEditResponseMessage pictureEditResponseMessage=new PictureEditResponseMessage();
             pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.EDIT_ACTION.getValue());
-            String message=String.format("%s执行了%s操作",user.getUserName(),pictureEditActionEnum.getText());
+            String message = String.format("%s执行了%s", user.getUserName(), pictureEditActionEnum.getText());
             pictureEditResponseMessage.setMessage(message);
             pictureEditResponseMessage.setEditAction(editAction);
             pictureEditResponseMessage.setUser(userService.getUserVO(user));

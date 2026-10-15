@@ -2,17 +2,21 @@ package com.xiaowei.weipicturebackend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xiaowei.weipicturebackend.constant.UserConstants;
 import com.xiaowei.weipicturebackend.enums.SpaceLevelEnums;
+import com.xiaowei.weipicturebackend.enums.SpaceTypeEnums;
 import com.xiaowei.weipicturebackend.exception.BusinessException;
 import com.xiaowei.weipicturebackend.exception.ErrorCode;
 import com.xiaowei.weipicturebackend.exception.ThrowUtils;
 import com.xiaowei.weipicturebackend.manager.auth.StpKit;
 import com.xiaowei.weipicturebackend.model.dto.space.SpaceAddRequest;
 import com.xiaowei.weipicturebackend.model.dto.space.SpaceEditRequest;
+import com.xiaowei.weipicturebackend.model.dto.user.UserInfoEditRequest;
 import com.xiaowei.weipicturebackend.model.dto.user.UserQueryRequest;
 import com.xiaowei.weipicturebackend.model.entity.User;
 import com.xiaowei.weipicturebackend.mapper.UserMapper;
@@ -25,7 +29,10 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +50,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Lazy
     @Resource
     private SpaceService spaceService;
+
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword, HttpServletRequest request) {
@@ -68,16 +78,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         //3.加密密码
         String encryptPassword = getEncryptPassword(userPassword);
-        //4.插入数据
+
         User user = new User();
-        user.setUserAccount(userAccount);
-        user.setUserPassword(encryptPassword);
-        user.setUserName("无名");
-        boolean saveResult = this.save(user);
-        if (!saveResult) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册失败");
-        }
-        //5.返回用户ID
+        transactionTemplate.execute(status -> {
+            //4.插入数据
+            user.setUserAccount(userAccount);
+            user.setUserPassword(encryptPassword);
+            user.setUserName("无名");
+            boolean saveResult = this.save(user);
+            if (!saveResult) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册失败");
+            }
+            //用户注册成功之后，自动为其创建私人空间
+            SpaceAddRequest spaceAddRequest = new SpaceAddRequest();
+            spaceAddRequest.setSpaceName("默认空间");
+            spaceAddRequest.setSpaceLevel(SpaceLevelEnums.COMMON.getValue());
+            spaceAddRequest.setSpaceType(SpaceTypeEnums.PRIVATE.getValue());
+            spaceService.addSpace(spaceAddRequest, null, user.getId());
+
+            return null;
+        });
         return user.getId();
     }
 
@@ -206,5 +226,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return false;
         }
         return UserConstants.ADMIN_ROLE.equals(loginUser.getUserRole());
+    }
+
+    @Override
+    public boolean userInfoEdit(HttpServletRequest request, UserInfoEditRequest userInfoEditRequest) {
+        //1、判断用户是否登入
+        User loginUser = this.getLoginUser(request);
+        if(ObjUtil.isNull(loginUser)){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "登入才可编辑信息");
+        }
+        //2、只有用户本人和管理原可以编辑用户自己的信息
+        Long editUserId = userInfoEditRequest.getUserId();
+        User editUser = this.baseMapper.selectById(editUserId);
+        if(ObjUtil.isNull(editUser)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "编辑的用户信息不存在");
+        }
+        if(!UserConstants.ADMIN_ROLE.equals(loginUser.getUserRole()) && !loginUser.getId().equals(editUserId)){
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限编辑");
+        }
+        //3、构造用户信息
+        BeanUtil.copyProperties(userInfoEditRequest, editUser);
+        editUser.setEditTime(LocalDateTime.now());
+        //4、入库
+        boolean result = this.updateById(editUser);
+        ThrowUtils.throwIf(!result , ErrorCode.SYSTEM_ERROR, "用户信息编辑失败");
+        return result;
     }
 }
